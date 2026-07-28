@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thermal Evolution — Pune Urban Heat Framework</title>
+  <meta name="description" content="A scientific investigation into Pune's urban thermal evolution from 2013 to 2026, linking land cover change, nighttime lights, and surface temperature through multi-source satellite evidence.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200;0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+
+  <!-- Shared system -->
+  <link rel="stylesheet" href="css/design-system.css">
+
+  <style>
+    /* ════════════════════════════════════════════════
+       THERMAL EVOLUTION — PAGE-SPECIFIC STYLES
+       ════════════════════════════════════════════════ */
+
+    /* Local token extensions */
+    :root {
+      --cream: #f4f0e8;  /* matches new --paper */
+      --slate:  #3a5068;
+      --accent: #c95f35;
+    }
+
+    /* Dark hero masthead (full-bleed dark section at top of page) */
+    .page-masthead-hero {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 80px var(--space-xl) 64px;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Subtle cartographic coordinate grid */
+    .page-masthead-hero::after {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none;
+      opacity: 0.04;
+      background-image:
+        linear-gradient(rgba(244,240,232,1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(244,240,232,1) 1px, transparent 1px);
+      background-size: 72px 72px;
+    }
+    .masthead-inner {
+      max-width: 860px; margin: 0 auto; position: relative; z-index: 1;
+    }
+    .masthead-label {
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(245,237,224,0.4); margin-bottom: var(--space-md);
+    }
+    .masthead-title {
+      font-family: var(--font-serif); font-weight: 300; font-size: clamp(36px, 5vw, 60px);
+      line-height: 1.08; letter-spacing: -0.02em;
+      color: var(--cream); margin: 0 0 var(--space-lg);
+    }
+    .masthead-title em {
+      color: var(--accent-2); font-style: italic;
+    }
+    .masthead-lead {
+      font-family: var(--font-ui); font-size: 17px; line-height: 1.72;
+      color: rgba(245,237,224,0.72); font-weight: 300;
+      max-width: 640px;
+    }
+    .masthead-meta {
+      display: flex; gap: var(--space-xl); flex-wrap: wrap;
+      margin-top: var(--space-xl);
+      padding-top: var(--space-lg);
+      border-top: 1px solid rgba(245,237,224,0.12);
+    }
+    .meta-item { display: flex; flex-direction: column; gap: 4px; }
+    .meta-label {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: rgba(245,237,224,0.28);
+    }
+    .meta-value {
+      font-family: var(--font-ui); font-size: 13px;
+      color: rgba(245,237,224,0.65);
+    }
+
+    /* Article body */
+    .article-body {
+      max-width: 860px; margin: 0 auto;
+      padding: var(--space-xl) var(--space-xl);
+    }
+
+    /* Section headings */
+    .section-chapter {
+      font-family: var(--font-mono); font-size: 10.5px;
+      letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--slate); margin-bottom: var(--space-sm);
+    }
+    .section-title {
+      font-family: var(--font-serif); font-weight: 300;
+      font-size: clamp(26px, 3.5vw, 40px); line-height: 1.12;
+      letter-spacing: -0.015em; color: var(--ink);
+      margin: 0 0 var(--space-md);
+    }
+    .section-title em { font-style: italic; color: var(--accent); }
+    .body-text {
+      font-family: var(--font-ui); font-size: 16px;
+      line-height: 1.78; color: #3a3530; font-weight: 300;
+      margin-bottom: var(--space-md);
+    }
+    .body-text strong { font-weight: 500; color: var(--ink); }
+
+    /* Horizontal rule between sections */
+    .section-divider {
+      border: none; border-top: 1px solid rgba(52,42,36,0.1);
+      margin: 64px 0;
+    }
+
+    /* Full-width figure block */
+    .fig-block {
+      margin: var(--space-xl) 0;
+    }
+    .fig-block img {
+      width: 100%; border-radius: 8px;
+      box-shadow: 0 4px 24px rgba(52,42,36,0.10);
+      cursor: zoom-in;
+      transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+    }
+    .fig-block img:hover {
+      transform: scale(1.01);
+      box-shadow: 0 8px 36px rgba(52,42,36,0.16);
+    }
+    .fig-caption {
+      font-family: var(--font-mono); font-size: 11.5px;
+      color: rgba(52,42,36,0.55); line-height: 1.6;
+      margin-top: 12px; letter-spacing: 0.02em;
+    }
+    .fig-caption strong { color: var(--ink); }
+
+    /* Two-column figure layout */
+    .fig-grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: var(--space-md); margin: var(--space-xl) 0;
+    }
+    @media (max-width: 700px) { .fig-grid-2 { grid-template-columns: 1fr; } }
+
+    /* Satellite comparison card */
+    .sat-card {
+      background: var(--ink); border-radius: 12px; overflow: hidden;
+      margin: var(--space-xl) 0;
+    }
+    .sat-card-header {
+      padding: var(--space-lg) var(--space-xl);
+      border-bottom: 1px solid rgba(245,237,224,0.08);
+    }
+    .sat-card-label {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(245,237,224,0.35); margin-bottom: 6px;
+    }
+    .sat-card-title {
+      font-family: var(--font-serif); font-weight: 300;
+      font-size: 22px; color: var(--cream); letter-spacing: -0.01em;
+    }
+    .sat-card-body {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1px; background: rgba(245,237,224,0.06);
+    }
+    @media (max-width: 640px) { .sat-card-body { grid-template-columns: 1fr; } }
+    .sat-panel { background: #1a1410; }
+    .sat-panel img { width: 100%; display: block; }
+    .sat-panel-label {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(245,237,224,0.35); padding: 10px 16px;
+    }
+
+    /* Statistical callout strip */
+    .stat-strip {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1px; background: rgba(52,42,36,0.08);
+      border-radius: 10px; overflow: hidden;
+      margin: var(--space-xl) 0;
+    }
+    .stat-cell {
+      background: #faf7f3; padding: var(--space-lg) var(--space-xl);
+    }
+    .stat-cell-label {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: rgba(52,42,36,0.45); margin-bottom: 8px;
+    }
+    .stat-cell-number {
+      font-family: var(--font-serif); font-weight: 300;
+      font-size: 32px; line-height: 1; letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    .stat-cell-number.warm { color: #c95f35; }
+    .stat-cell-number.green { color: #2a7a4b; }
+    .stat-cell-number.cool { color: #2a6496; }
+    .stat-cell-unit {
+      font-family: var(--font-mono); font-size: 10px;
+      color: rgba(52,42,36,0.4); margin-top: 4px;
+    }
+
+    /* Pull quote */
+    .pull-quote {
+      border-left: 3px solid #3a5068;
+      padding: var(--space-md) var(--space-xl);
+      margin: var(--space-xl) 0;
+      background: rgba(58,80,104,0.05);
+      border-radius: 0 6px 6px 0;
+    }
+    .pull-quote p {
+      font-family: var(--font-serif); font-weight: 300; font-style: italic;
+      font-size: 19px; line-height: 1.55; color: var(--ink);
+      margin: 0;
+    }
+    .pull-quote cite {
+      display: block; margin-top: var(--space-sm);
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(52,42,36,0.45); font-style: normal;
+    }
+
+    /* Immersive GIF section */
+    .timelapse-section {
+      margin: var(--space-xl) 0;
+      background: var(--ink); border-radius: 12px; overflow: hidden;
+    }
+    .timelapse-header {
+      padding: var(--space-lg) var(--space-xl) 0;
+    }
+    .timelapse-label {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(245,237,224,0.32); margin-bottom: 8px;
+    }
+    .timelapse-title {
+      font-family: var(--font-serif); font-weight: 300;
+      font-size: 22px; color: var(--cream); letter-spacing: -0.01em;
+    }
+    .timelapse-gif-wrap {
+      margin: var(--space-lg) 0 0;
+      position: relative;
+    }
+    .timelapse-gif-wrap img {
+      width: 100%; display: block;
+    }
+    .timelapse-footer {
+      padding: var(--space-md) var(--space-xl) var(--space-lg);
+    }
+    .timelapse-note {
+      font-family: var(--font-ui); font-size: 13.5px;
+      color: rgba(245,237,224,0.55); line-height: 1.7; font-weight: 300;
+    }
+
+    /* Evidence table */
+    .evidence-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-md); margin: var(--space-xl) 0;
+    }
+    @media (max-width: 640px) { .evidence-grid { grid-template-columns: 1fr; } }
+    .evidence-card {
+      border: 1px solid rgba(52,42,36,0.1);
+      border-radius: 10px; padding: var(--space-lg);
+      background: #faf7f3;
+      transition: box-shadow 0.25s var(--ease), transform 0.25s var(--ease);
+    }
+    .evidence-card:hover {
+      box-shadow: 0 6px 24px rgba(52,42,36,0.09);
+      transform: translateY(-2px);
+    }
+    .evidence-number {
+      font-family: var(--font-mono); font-weight: 700;
+      font-size: 13px; letter-spacing: 0.20em; text-transform: uppercase;
+      color: var(--slate); line-height: 1; margin-bottom: 10px;
+    }
+    .evidence-title {
+      font-family: var(--font-ui); font-size: 13px;
+      font-weight: 600; color: var(--ink); letter-spacing: 0.02em;
+      text-transform: uppercase; margin-bottom: var(--space-sm);
+    }
+    .evidence-body {
+      font-family: var(--font-ui); font-size: 13.5px;
+      line-height: 1.68; color: rgba(52,42,36,0.7); font-weight: 300;
+    }
+
+    /* Conclusion section */
+    .conclusion-block {
+      background: var(--ink); color: var(--cream);
+      border-radius: 12px; padding: var(--space-xl);
+      margin: var(--space-xl) 0;
+    }
+    .conclusion-block .section-chapter { color: rgba(232,146,74,0.75); }
+    .conclusion-block .section-title { color: var(--cream); }
+    .conclusion-block .body-text { color: rgba(245,237,224,0.7); }
+
+    /* Inline data highlight */
+    .data-inline {
+      display: inline-block;
+      background: rgba(201,95,53,0.08);
+      color: #c95f35;
+      font-family: var(--font-mono);
+      font-size: 0.87em;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+    .data-inline.green {
+      background: rgba(42,122,75,0.09);
+      color: #2a7a4b;
+    }
+    .data-inline.blue {
+      background: rgba(58,80,104,0.09);
+      color: #3a5068;
+    }
+
+    /* Linked urban-thermal section with side numbers */
+    .linkage-row {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: var(--space-lg);
+      align-items: start;
+      margin-bottom: var(--space-xl);
+    }
+    .linkage-number {
+      font-family: var(--font-serif); font-weight: 300;
+      font-size: 52px; letter-spacing: -0.04em;
+      color: rgba(52,42,36,0.12); line-height: 1;
+      padding-top: 6px;
+    }
+    .linkage-content {}
+    .linkage-title {
+      font-family: var(--font-mono); font-weight: 700;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: #3a5068; margin-bottom: var(--space-sm);
+    }
+    @media (max-width: 600px) { .linkage-row { grid-template-columns: 1fr; } .linkage-number { display: none; } }
+
+    /* ── Lightbox (#lb matches climate_evolution pattern) ── */
+    #lb {
+      position: fixed; inset: 0; background: rgba(10,5,0,0.94);
+      z-index: 9999; display: none;
+      align-items: center; justify-content: center;
+    }
+    #lb.open { display: flex; }
+    #lb img { max-width: 92%; max-height: 90vh; object-fit: contain; }
+    #lb-x {
+      position: absolute; top: 20px; right: 28px;
+      color: #fff; font-size: 42px; cursor: pointer; opacity: 0.7; line-height: 1;
+    }
+    #lb-x:hover { opacity: 1; }
+
+    /* ── Fix .data-inline.warn ── */
+    .data-inline.warn { background: rgba(201,95,53,0.08); color: #c95f35; }
+  </style>
+</head>
+<body style="padding-top:60px;">
+
+  <!-- SHARED: Progress + Lightbox (#lb = climate_evolution pattern) -->
+  <div id="site-progress"></div>
+  <div id="lb">
+    <span id="lb-x" onclick="closeLB()">&times;</span>
+    <img id="lb-img" src="" alt="">
+  </div>
+
+  <!-- SHARED GLOBAL NAV -->
+  <nav class="site-nav" role="navigation" aria-label="Main navigation">
+    <a class="nav-brand" href="index.html">
+      <div class="nav-brand-badge" aria-hidden="true">PMC</div>
+      <span class="nav-brand-text">Pune Urban Heat Framework</span>
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="ward_heat_risk.html">Ward Heat Risk</a></li>
+      <li><a href="climate_evolution.html">Climate Evolution</a></li>
+      <li><a href="thermal_evolution.html" class="active" aria-current="page">Thermal Evolution</a></li>
+    </ul>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
+  </nav>
+  <div class="nav-mobile-menu" id="nav-mobile-menu" role="dialog" aria-hidden="true">
+    <button class="nav-mobile-close" id="nav-mobile-close" aria-label="Close">&#x2715;</button>
+    <a href="index.html">Home</a>
+    <a href="ward_heat_risk.html">Ward Heat Risk</a>
+    <a href="climate_evolution.html">Climate Evolution</a>
+    <a href="thermal_evolution.html" class="active">Thermal Evolution</a>
+  </div>
+
+  <!-- PAGE MASTHEAD (sub-header, same pattern as climate_evolution) -->
+  <div class="page-masthead">
+    <div class="page-masthead-inner">
+      <span>PUNE URBAN HEAT FRAMEWORK</span>
+      <span class="page-masthead-center">THERMAL EVOLUTION · 2013–2026</span>
+      <a href="index.html" style="color:var(--heat-3);text-decoration:none;font-weight:700;border-bottom:1px solid var(--heat-3);">← Dashboard</a>
+    </div>
+  </div>
+
+  <!-- ═══ DARK HERO MASTHEAD ═══ -->
+  <header class="page-masthead-hero">
+    <div class="masthead-inner reveal">
+      <h1 class="masthead-title">
+        Pune is getting<br><em>hotter, brighter,</em><br>and more built.
+      </h1>
+      <p class="masthead-lead">
+        Using 14 years of Landsat, MODIS, VIIRS nighttime light, and ESRI land cover satellite data, 
+        this investigation documents how urbanisation has fundamentally altered Pune's thermal landscape 
+        — and how four independent lines of evidence converge on the same conclusion.
+      </p>
+      <div class="masthead-meta">
+        <div class="meta-item">
+          <span class="meta-label">Thermal Record</span>
+          <span class="meta-value">2013 – 2026 (Landsat 8/9)</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Land Cover</span>
+          <span class="meta-value">2017 – 2025 (ESRI 10m)</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Night Lights</span>
+          <span class="meta-value">2013 – 2026 (NOAA VIIRS DNB)</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Spatial Resolution</span>
+          <span class="meta-value">10 – 30 m per pixel</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ ARTICLE BODY ═══ -->
+  <main class="article-body">
+
+    <!-- ════════════════ §1 INTRODUCTION ════════════════ -->
+    <section class="reveal" aria-labelledby="intro-heading">
+      <p class="section-chapter">Introduction</p>
+      <h2 class="section-title" id="intro-heading">What is thermal evolution — and why does Pune need to pay attention?</h2>
+
+      <p class="body-text">
+        A city's thermal landscape is never static. As forests give way to roads and rooftops, 
+        and as farmland becomes apartment blocks, the surface that absorbs sunlight changes fundamentally. 
+        Dark asphalt, concrete, and bare soil absorb and re-radiate far more heat than the vegetation they replace. 
+        The result is a gradual but measurable warming of the urban surface — a phenomenon captured 
+        precisely by Landsat's Thermal Infrared Sensor (TIRS) at 30-metre resolution.
+      </p>
+      <p class="body-text">
+        Pune is one of India's fastest-growing metropolitan areas. Between 2011 and 2025, its population 
+        expanded from 3.1 million to over 4.7 million, and its built-up footprint expanded accordingly. 
+        This analysis asks a precise scientific question: <strong>Is Pune's thermal signature changing, and if so, 
+        can we attribute that change to urbanisation?</strong>
+      </p>
+      <p class="body-text">
+        The answer — drawn from four independent satellite-derived datasets spanning 14 years — is unambiguous.
+      </p>
+
+      <div class="pull-quote">
+        <p>"The urban area expanded by 63.4 km² between 2017 and 2025 — an area larger than the entire island of Malta — 
+        while nighttime light intensity across the city increased by 88% in the same period."</p>
+        <cite>Derived from ESRI LULC (M8) and NOAA VIIRS (M9) analysis</cite>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ════════════════ §2 SATELLITE OVERVIEW ════════════════ -->
+    <section class="reveal" aria-labelledby="sat-heading">
+      <p class="section-chapter">Satellite Overview — 2013 vs 2025</p>
+      <h2 class="section-title" id="sat-heading">Seeing the city change <em>from space.</em></h2>
+
+      <p class="body-text">
+        Before examining statistical trends, it helps to simply <em>look</em> at the city. 
+        The two composites below are derived from pre-monsoon Landsat 8/9 median reflectance. 
+        The True Colour Composite (TCC) shows Pune as the human eye would see it from orbit. 
+        The False Colour Composite (FCC), using near-infrared bands, makes vegetation glow bright red — 
+        making it immediately apparent where green cover has been replaced by impervious surfaces.
+      </p>
+
+      <div class="sat-card reveal">
+        <div class="sat-card-header">
+          <p class="sat-card-label">Pre-Monsoon Landsat 8/9 Composite</p>
+          <p class="sat-card-title">True Colour &amp; Vegetation-Sensitive False Colour — Pune Municipal Area</p>
+        </div>
+        <div class="sat-card-body">
+          <div class="sat-panel">
+            <p class="sat-panel-label">True Colour Composite (RGB: B4-B3-B2) · Landsat 8/9 2026</p>
+            <img src="data/Pune_TCC_2026.png"
+                 alt="Pune True Colour Composite from Landsat 8/9 — pre-monsoon 2026"
+                 loading="lazy" class="fig-img" onclick="openLB(this.src)">
+          </div>
+          <div class="sat-panel">
+            <p class="sat-panel-label">False Colour Composite (NIR: B5-B4-B3) · Red = Vegetation · 2026</p>
+            <img src="data/Pune_FCC_2026.png"
+                 alt="Pune False Colour Composite from Landsat 8/9 — vegetation in red, 2026"
+                 loading="lazy" class="fig-img" onclick="openLB(this.src)">
+          </div>
+        </div>
+      </div>
+
+      <p class="body-text">
+        The FCC is particularly revealing. In the false-colour rendering, deep red tones indicate 
+        healthy vegetation and cropland — still visible on Pune's periphery — while grey and silver 
+        tones indicate dense built-up infrastructure. The spatial shrinkage of red areas between 
+        earlier and more recent composites is the visual signature of what the data will confirm numerically.
+      </p>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ════════════════ §3 SURFACE TEMPERATURE ════════════════ -->
+    <section class="reveal" aria-labelledby="lst-heading">
+      <p class="section-chapter">Surface Temperature (M2 + M3)</p>
+      <h2 class="section-title" id="lst-heading">The surface is warming — but not <em>uniformly.</em></h2>
+
+      <p class="body-text">
+        Using pre-monsoon (March–June) median Land Surface Temperature (LST) from Landsat 8/9 
+        for every year from 2013 to 2026, the analysis reveals a clear thermal stratification within Pune. 
+        The urban core consistently runs hotter than the rural reference zone — a phenomenon known as 
+        the Surface Urban Heat Island (SUHI). But the pattern is more nuanced than a simple 
+        "city vs. countryside" contrast.
+      </p>
+
+      <!-- LST vs NDVI -->
+      <div class="fig-block reveal">
+        <img src="data/Fig_M2_LST_vs_NDVI_Regression.png"
+             alt="Scatter plot showing inverse relationship between NDVI (vegetation) and LST (surface temperature) across Pune"
+             loading="lazy" class="fig-img" onclick="openLB(this.src)">
+        <p class="fig-caption">
+          <strong>Fig. M2a.</strong> Per-pixel relationship between the Normalized Difference Vegetation Index (NDVI) 
+          and Land Surface Temperature (LST) across 3,000 sampled Landsat pixels (pre-monsoon 2024 composite). 
+          The strong negative empirical slope confirms the cooling efficiency of vegetation — each unit increase 
+          in NDVI corresponds to a measurable drop in surface temperature.
+        </p>
+      </div>
+
+      <p class="body-text">
+        The scatter plot above encodes a fundamental ecological relationship: <strong>where vegetation survives, 
+        surfaces are cooler.</strong> The empirical regression slope — derived from 3,000 spatially random pixels 
+        across the Pune Municipal Area — confirms that this cooling relationship is spatially robust and 
+        statistically significant. Critically, the pixels with the highest LST values are concentrated 
+        in the low-NDVI, high Built-Surface Index (BSI) regions that characterise Pune's densely built core.
+      </p>
+
+      <!-- LST by land cover class -->
+      <div class="fig-block reveal">
+        <img src="data/Fig_M2_LST_by_LandCover.png"
+             alt="Bar chart showing mean LST by land cover class: Impervious Built-Up, Bare Soil, Dense Vegetation, Water Body"
+             loading="lazy" class="fig-img" onclick="openLB(this.src)">
+        <p class="fig-caption">
+          <strong>Fig. M2b.</strong> Mean pre-monsoon Land Surface Temperature stratified by classified 
+          land cover type. Error bars represent ±1 standard deviation across sampled pixels. 
+          Impervious Built-Up surfaces register the highest mean LST, confirming that the thermal burden 
+          in Pune is disproportionately concentrated in urbanised zones.
+        </p>
+      </div>
+
+      <p class="body-text">
+        The thermal hierarchy by surface cover is stark. <strong>Impervious built-up surfaces are the hottest,</strong> 
+        followed by bare basaltic soil — a material common across the Deccan Plateau and present in 
+        Pune's peri-urban fringes. Dense vegetation and water bodies represent the city's primary 
+        natural cooling infrastructure. The implications are direct: as impervious surfaces have 
+        expanded and vegetation has retreated, Pune's aggregate thermal load has increased.
+      </p>
+
+      <hr class="section-divider">
+
+      <p class="section-chapter">Module 3 — SUHI Analysis</p>
+      <h2 class="section-title">The urban core runs hotter — day and night — and <em>the gap is widening.</em></h2>
+
+      <p class="body-text">
+        Module 3 formalises the Surface Urban Heat Island measurement using a fixed rural reference mask 
+        outside Pune's metropolitan boundary. By comparing the pre-monsoon LST of the urban core against 
+        this stable reference, an objective SUHI intensity time-series is constructed for every year 
+        from 2013 to 2026.
+      </p>
+
+      <!-- Daytime SUHI Evolution -->
+      <div class="fig-block reveal">
+        <img src="data/Fig_M3_Daytime_SUHI_Evolution.png"
+             alt="Time series of urban and rural LST trajectories 2013-2026 with thermal excess shaded in yellow"
+             loading="lazy" class="fig-img" onclick="openLB(this.src)">
+        <p class="fig-caption">
+          <strong>Fig. M3a.</strong> Absolute pre-monsoon Land Surface Temperature trajectories for the Pune 
+          urban core (red) and fixed rural reference pixels (blue), 2013–2026. The yellow shaded region 
+          represents the thermal excess band — the surplus heat absorbed by the urban surface over and above 
+          the rural reference. Dashed lines show Theil-Sen non-parametric regression slopes.
+        </p>
+      </div>
+
+      <!-- SUHI Day/Night stats strip from CSV data -->
+      <div class="stat-strip reveal">
+        <div class="stat-cell">
+          <p class="stat-cell-label">Urban LST 2013 Mean</p>
+          <p class="stat-cell-number warm">47.9°C</p>
+          <p class="stat-cell-unit">Pre-monsoon daytime</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Urban LST 2026 Mean</p>
+          <p class="stat-cell-number warm">46.2°C</p>
+          <p class="stat-cell-unit">Pre-monsoon daytime</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Mean Daytime SUHI</p>
+          <p class="stat-cell-number warm">3.6°C</p>
+          <p class="stat-cell-unit">Urban minus rural reference</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Hotspot 90th pct SUHI</p>
+          <p class="stat-cell-number warm">5.2°C</p>
+          <p class="stat-cell-unit">Peak daytime urban excess</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Mean Nocturnal SUHI</p>
+          <p class="stat-cell-number cool">1.6°C</p>
+          <p class="stat-cell-unit">MODIS nighttime (2013–2026)</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Urban Night Temp 2026</p>
+          <p class="stat-cell-number cool">26.1°C</p>
+          <p class="stat-cell-unit">Nocturnal surface LST</p>
+        </div>
+      </div>
+
+      <!-- Day/Night SUHI trajectory -->
+      <div class="fig-block reveal">
+        <img src="data/Fig_M3_Day_Night_SUHI_Trajectory.png"
+             alt="Dual time-series of daytime 90th percentile SUHI and nocturnal SUHI intensity 2013-2026"
+             loading="lazy" class="fig-img" onclick="openLB(this.src)">
+        <p class="fig-caption">
+          <strong>Fig. M3b.</strong> Decadal trajectory of daytime 90th-percentile SUHI hotspot intensity (red) 
+          versus nocturnal mean SUHI (blue), 2013–2026. Daytime SUHI exhibits a diurnal inversion 
+          known as an Urban Cool Island (UCI) — a consequence of shade and high thermal inertia during 
+          10:30 IST overpass timing. Nocturnal SUHI remains persistently positive, 
+          averaging <span class="data-inline">+1.6°C</span> above the rural reference — evidence of 
+          heat stored in the urban fabric being released after sunset.
+        </p>
+      </div>
+
+      <p class="body-text">
+        The nocturnal signal is critically important. While daytime measurements show the complex 
+        physics of shading and thermal inertia, the <strong>night-time UHI consistently exceeds +1.4°C and 
+        reaches as high as +1.93°C</strong> (2017), confirming that Pune's urban fabric is storing and releasing 
+        anthropogenic heat even after the sun sets. This has direct implications for heat stress — 
+        nighttime temperatures determine whether urban residents can physiologically recover from daytime heat exposure.
+      </p>
+
+      <!-- Diurnal contrast -->
+      <div class="fig-grid-2 reveal">
+        <div>
+          <img src="data/Fig_M3_Diurnal_SUHI_Contrast.png"
+               alt="Diurnal thermal inversion plot: daytime UCI vs nocturnal UHI in Pune"
+               loading="lazy" class="fig-img" style="margin:0;cursor:zoom-in" onclick="openLB(this.src)">
+          <p class="fig-caption">
+            <strong>Fig. M3c.</strong> Daytime (10:30 IST Landsat) vs nocturnal (22:30 IST MODIS) SUHI 
+            intensity, showing the classical diurnal thermal inversion. The nocturnal signal is 
+            consistently positive throughout the 14-year record.
+          </p>
+        </div>
+        <div>
+          <img src="data/Fig_M3_Reference_Sensitivity.png"
+               alt="Sensitivity analysis of SUHI estimates across three rural reference mask definitions"
+               loading="lazy" class="fig-img" style="margin:0;cursor:zoom-in" onclick="openLB(this.src)">
+          <p class="fig-caption">
+            <strong>Fig. M3d.</strong> Methodological sensitivity analysis showing that the SUHI signal 
+            is robust across three distinct rural reference buffer definitions (Primary, LCZ-D, 
+            Agricultural). This confirms that the thermal excess is a real physical signal — 
+            not an artefact of reference zone selection.
+          </p>
+        </div>
+      </div>
+
+      <p class="body-text">
+        The sensitivity analysis (Fig. M3d) is a critical scientific validation. By testing the SUHI 
+        estimate against three methodologically independent rural reference definitions — a fixed 
+        primary mask, a Local Climate Zone D (LCZ-D) equivalent buffer, and an agricultural boundary mask — 
+        and finding consistent positive UHI signals across all three, we can reject the hypothesis 
+        that the measured warming is an artefact of reference selection. <strong>The nocturnal heat island is real, 
+        persistent, and not a methodological construct.</strong>
+      </p>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ════════════════ §4 WHAT CHANGED ON THE GROUND ════════════════ -->
+    <section class="reveal" aria-labelledby="lulc-heading">
+      <p class="section-chapter">Land Use / Land Cover — Module 8</p>
+      <h2 class="section-title" id="lulc-heading">What changed on the ground — and by <em>how much?</em></h2>
+
+      <p class="body-text">
+        Thermal evolution does not occur in a vacuum. It is the direct consequence of land 
+        transformation. Using the ESRI Global 10-metre Annual Land Cover dataset (Sentinel-2), 
+        we can map with precision exactly how Pune's surface composition has changed from 2017 to 2025 
+        across nine land cover classes.
+      </p>
+
+      <!-- Urban Metrics: 3 key stats -->
+      <div class="stat-strip reveal">
+        <div class="stat-cell">
+          <p class="stat-cell-label">Built Area 2017</p>
+          <p class="stat-cell-number">297.5 km²</p>
+          <p class="stat-cell-unit">55.4% of municipal area</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Built Area 2025</p>
+          <p class="stat-cell-number warm">360.9 km²</p>
+          <p class="stat-cell-unit">67.2% of municipal area (+21.3%)</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Urban Expansion</p>
+          <p class="stat-cell-number warm">+63.4 km²</p>
+          <p class="stat-cell-unit">Added in just 8 years</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Cropland Lost</p>
+          <p class="stat-cell-number warm">−59.6 km²</p>
+          <p class="stat-cell-unit">−65.6% since 2017</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Tree Cover Lost</p>
+          <p class="stat-cell-number">−3.6 km²</p>
+          <p class="stat-cell-unit">−28.6% since 2017</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Green Area 2025</p>
+          <p class="stat-cell-number green">40.1 km²</p>
+          <p class="stat-cell-unit">Down from 103.4 km² in 2017</p>
+        </div>
+      </div>
+
+      <p class="body-text">
+        The numbers are striking. Between 2017 and 2025, Pune's built-up area expanded from 
+        <span class="data-inline">297.5 km²</span> to <span class="data-inline warm">360.9 km²</span> — 
+        a gain of <strong>63.4 km²</strong> in just eight years. This expansion did not occur on empty land. 
+        It occurred primarily at the expense of <strong>cropland, which declined by 59.6 km² (−65.6%)</strong>, 
+        and to a lesser extent, tree cover, which fell by 3.6 km² (−28.6%). 
+        The result is that the total vegetated and agricultural area — which provides evaporative 
+        cooling, shade, and albedo regulation — collapsed from 103.4 km² to just 40.1 km² between 2017 and 2025: 
+        a reduction of <strong>61% in eight years.</strong>
+      </p>
+
+      <!-- Urban metrics chart -->
+      <div class="fig-block reveal">
+        <img src="data/Fig_M8_Urban_Metrics.png"
+             alt="Three panel chart: built area trajectory, impervious vs green fraction, annual urban expansion rate"
+             loading="lazy" class="fig-img" onclick="openLB(this.src)">
+        <p class="fig-caption">
+          <strong>Fig. M8a.</strong> Urbanisation metrics across Pune, 2017–2025. Left: cumulative trajectory 
+          of built-up cover with Theil-Sen regression slope. Centre: competing trends in impervious fraction 
+          vs. vegetated fraction as shares of total municipal area — the two lines cross, marking a structural 
+          tipping point in urban ecology. Right: annual expansion velocity (km²/year), showing acceleration 
+          in 2018 and 2022.
+        </p>
+      </div>
+
+      <p class="body-text">
+        The central panel of Fig. M8a captures the most consequential trend: the 
+        <strong>impervious fraction crossed 60% of the total municipal area in 2019</strong> and continued 
+        climbing to 67.2% by 2025, while the greenness index — the share of total area under any 
+        form of vegetation — fell below 10% in 2022 and reached just 7.5% by 2025. 
+        These two trajectories are converging toward an urban ecology with 
+        minimal natural thermal buffering capacity.
+      </p>
+
+      <!-- LULC Dashboard -->
+      <div class="fig-block reveal">
+        <img src="data/Fig_M8_Dashboard.png"
+             alt="Six panel LULC dashboard showing area composition, change, net difference, built vs tree divergence, Shannon entropy, conversion velocity"
+             loading="lazy" class="fig-img" onclick="openLB(this.src)">
+        <p class="fig-caption">
+          <strong>Fig. M8b.</strong> Comprehensive LULC analysis dashboard, 2017–2025. Panels show: 
+          (A) stacked area composition over time, (B) cumulative departure from 2017 baseline, 
+          (C) net 8-year area change by class, (D) built-up vs tree canopy divergence trajectory, 
+          (E) Shannon landscape diversity index — declining heterogeneity indicates increasing homogenisation 
+          of the urban surface — and (F) annual gross land conversion velocity, revealing peak 
+          transformation events.
+        </p>
+      </div>
+
+      <p class="body-text">
+        The declining <strong>Shannon Diversity Index</strong> in panel E tells an important secondary story. 
+        A diverse landscape — mixing agriculture, water, vegetation, and built-up areas — provides 
+        spatial heterogeneity that acts as a thermal buffer. As Pune's landscape homogenises toward 
+        a predominantly impervious surface, this spatial buffering capacity disappears. 
+        The city is becoming more thermally uniform — and uniformly hotter.
+      </p>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ════════════════ §5 LULC TIMELAPSE ════════════════ -->
+    <section class="reveal" aria-labelledby="lulc-timelapse-heading">
+      <p class="section-chapter">Module 8 — Spatiotemporal Animation</p>
+      <h2 class="section-title" id="lulc-timelapse-heading">Watch the city <em>transform</em> — year by year.</h2>
+
+      <p class="body-text">
+        The land cover timelapse below compresses eight years of satellite-observed transformation 
+        into a single animated view. Each frame represents one calendar year of ESRI Sentinel-2 
+        10-metre land cover mapping. The animation makes visible what individual maps obscure — 
+        the relentless, directional nature of urban encroachment.
+      </p>
+
+      <div class="timelapse-section reveal" id="lulcTimelapse">
+        <div class="timelapse-header">
+          <p class="timelapse-label">ESRI 10m Sentinel-2 Annual Land Cover · 2017–2025</p>
+          <p class="timelapse-title">Land Cover Timelapse — Pune Municipal Area</p>
+        </div>
+        <div class="timelapse-gif-wrap">
+          <img src="data/pune_lulc_timelapse_2017_2025.gif"
+               alt="Animated land cover timelapse of Pune 2017-2025, showing urban expansion in red replacing green cropland"
+               loading="lazy" id="lulcGif">
+        </div>
+        <div class="timelapse-footer">
+          <p class="timelapse-note">
+            <strong style="color:rgba(245,237,224,0.8)">What to observe:</strong> Watch the red zones 
+            (built-up area) expand outward from the central urban core into the eastern and south-eastern 
+            periphery. The yellow areas — cropland, particularly visible in the western and northern 
+            fringes — progressively shrink as residential and industrial development encroaches. 
+            Green areas (trees and vegetation) become increasingly fragmented. By 2025, the 
+            peri-urban ring that once provided ecological buffering has been substantially absorbed 
+            into the built fabric. Each frame covers approximately 537 km² of the Pune Municipal Area, 
+            mapped at 10-metre resolution.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ════════════════ §6 NIGHTTIME LIGHTS ════════════════ -->
+    <section class="reveal" aria-labelledby="ntl-heading">
+      <p class="section-chapter">Night-time Lights — Module 9 (NOAA VIIRS DNB)</p>
+      <h2 class="section-title" id="ntl-heading">When the sun sets, urbanisation <em>glows.</em></h2>
+
+      <p class="body-text">
+        Night-time light (NTL) radiance, measured by NOAA's Visible Infrared Imaging Radiometer Suite (VIIRS) 
+        Day/Night Band (DNB) at 463-metre resolution, provides an independent, physically distinct 
+        proxy for urbanisation. Unlike land cover mapping, which classifies what surfaces exist, 
+        NTL measures economic and infrastructure activity — roads, factories, commercial districts, 
+        and residential buildings all emit light that VIIRS captures from orbit.
+      </p>
+
+      <!-- NTL statistics strip from M9 CSV data -->
+      <div class="stat-strip reveal">
+        <div class="stat-cell">
+          <p class="stat-cell-label">Total Radiance 2013</p>
+          <p class="stat-cell-number">31,326</p>
+          <p class="stat-cell-unit">nW cm⁻² sr⁻¹ (integrated)</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Total Radiance 2026</p>
+          <p class="stat-cell-number warm">59,002</p>
+          <p class="stat-cell-unit">nW cm⁻² sr⁻¹ (+88.4%)</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Mean Radiance 2013</p>
+          <p class="stat-cell-number">11.8</p>
+          <p class="stat-cell-unit">nW cm⁻² sr⁻¹</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Mean Radiance 2026</p>
+          <p class="stat-cell-number warm">22.3</p>
+          <p class="stat-cell-unit">nW cm⁻² sr⁻¹ (+88.5%)</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">Lit Area (>1 nW) 2013</p>
+          <p class="stat-cell-number cool">509.5 km²</p>
+          <p class="stat-cell-unit">At 1 nW cm⁻² sr⁻¹ threshold</p>
+        </div>
+        <div class="stat-cell">
+          <p class="stat-cell-label">High-Intensity (>5 nW) 2026</p>
+          <p class="stat-cell-number warm">481.0 km²</p>
+          <p class="stat-cell-unit">Up from 354.3 km² in 2013 (+35.8%)</p>
+        </div>
+      </div>
+
+      <!-- NTL Trend figure -->
+      <div class="fig-block reveal">
+        <img src="data/Fig_M9_NTL_Trends.png"
+             alt="Two panel chart: total NTL radiance trend and lit area by threshold 2013-2026"
+             loading="lazy" class="fig-img" onclick="openLB(this.src)">
+        <p class="fig-caption">
+          <strong>Fig. M9a.</strong> Decadal acceleration of VIIRS nighttime radiance across Pune, 2013–2026. 
+          Left: integrated total radiance flux, rising from 31,326 to 59,002 nW cm⁻² sr⁻¹ (+88.4%). 
+          Right: expansion of lit surface area at three intensity thresholds (1, 3, 5 nW cm⁻² sr⁻¹), 
+          revealing that it is not just the spatial footprint of illumination expanding — but the 
+          <em>intensity</em> of light in already-lit areas that is increasing most rapidly.
+        </p>
+      </div>
+
+      <p class="body-text">
+        The NTL data reveals a crucial nuance. The lit area at the lowest threshold 
+        (<span class="data-inline blue">&gt;1 nW cm⁻² sr⁻¹</span>) — which captures all illuminated pixels — 
+        increased only modestly from 509.5 km² (2013) to 536.8 km² (2026). But the high-intensity footprint 
+        (<span class="data-inline warm">&gt;5 nW cm⁻² sr⁻¹</span>) expanded dramatically — from 
+        354.3 km² to 481.0 km² — an increase of 35.8% in 13 years. This pattern indicates that Pune is 
+        not simply spreading light to new areas; existing urban centres are intensifying — densifying, 
+        adding commercial activity, and increasing energy consumption. 
+        The overall integrated radiance more than doubled (+88%), driven primarily by this intensification dynamic.
+      </p>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ════════════════ §7 NTL TIMELAPSE ════════════════ -->
+    <section class="reveal" aria-labelledby="ntl-timelapse-heading">
+      <p class="section-chapter">Module 9 — Spatiotemporal Animation</p>
+      <h2 class="section-title" id="ntl-timelapse-heading">From amber glow to blazing <em>constellation.</em></h2>
+
+      <div class="timelapse-section reveal" id="ntlTimelapse">
+        <div class="timelapse-header">
+          <p class="timelapse-label">NOAA VIIRS DNB Annual Composites · 2013–2026</p>
+          <p class="timelapse-title">Nighttime Light Timelapse — Pune Metropolitan Area</p>
+        </div>
+        <div class="timelapse-gif-wrap">
+          <img src="data/pune_ntl_timelapse.gif"
+               alt="Animated nighttime lights timelapse of Pune 2013-2026, showing expanding radiance intensity in orange-yellow tones"
+               loading="lazy" id="ntlGif">
+        </div>
+        <div class="timelapse-footer">
+          <p class="timelapse-note">
+            <strong style="color:rgba(245,237,224,0.8)">What brightening indicates:</strong> 
+            In this false-colour rendering, dark zones represent rural and minimally developed areas. 
+            Amber-to-white intensities indicate increasing anthropogenic light emission, 
+            correlating directly with road construction, industrial activity, commercial 
+            development, and residential densification. Notice the progressive brightening 
+            in the eastern and north-eastern corridors — consistent with documented IT park development, 
+            highway construction, and residential expansion in areas including Kharadi, Hadapsar, 
+            and Wagholi. The sparkline strip at the bottom of each frame shows the cumulative 
+            radiance trajectory — observe how the pace of increase accelerates sharply from 2019 onward.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ════════════════ §7b THERMAL TIMELAPSE ════════════════ -->
+    <section class="reveal" aria-labelledby="thermal-timelapse-heading">
+      <p class="section-chapter">Module 3 — Thermal Animation</p>
+      <h2 class="section-title" id="thermal-timelapse-heading">Fourteen years of heat — <em>in motion.</em></h2>
+
+      <p class="body-text">
+        Land Surface Temperature is not static — it shifts with urbanisation, vegetation loss, and seasonal climate forcing.
+        The timelapse below animates Landsat-derived pre-monsoon LST composites from 2013 to 2026,
+        using a perceptually uniform heat colourmap. Each frame captures one year of thermal state.
+        Observe how the hottest zones — initially concentrated in the historic urban core — progressively
+        spread outward and intensify as new impervious surfaces are laid down across the urban periphery.
+      </p>
+
+      <div class="timelapse-section reveal" id="thermalTimelapse">
+        <div class="timelapse-header">
+          <p class="timelapse-label">Landsat 8/9 Pre-Monsoon LST · 2013–2026</p>
+          <p class="timelapse-title">Surface Temperature Timelapse — Pune Municipal Area</p>
+        </div>
+        <div class="timelapse-gif-wrap">
+          <img src="data/Pune_ThermalTimelapse_2013_2026.gif"
+               alt="Animated timelapse of Pune Land Surface Temperature 2013-2026 showing intensifying heat in the urban core"
+               loading="lazy" id="thermalGif" class="fig-img" onclick="openLB(this.src)">
+        </div>
+        <div class="timelapse-footer">
+          <p class="timelapse-note">
+            <strong style="color:rgba(245,237,224,0.8)">What to observe:</strong>
+            Cooler zones (deep blue-purple) appear over water bodies, dense vegetation, and the Western Ghats foothills.
+            Warm-to-hot zones (yellow-orange-red) track the impervious urban fabric — concrete, asphalt, bare ground.
+            Between 2013 and 2026, the high-temperature zone expands both in spatial extent and peak intensity,
+            consistent with the +63 km² of new built-up area documented in Module 8.
+            The peri-urban eastern and south-eastern corridors — Hadapsar, Kharadi, Wagholi — show the most
+            pronounced thermal intensification, spatially coinciding with the highest NTL brightening.
+            Click the animation to view it at full resolution.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ════════════════ §8 THE LINKAGE ════════════════ -->
+    <section class="reveal" aria-labelledby="linkage-heading">
+      <p class="section-chapter">Synthesis — Linking Urbanisation to Thermal Evolution</p>
+      <h2 class="section-title" id="linkage-heading">Four lines of evidence — one <em>conclusion.</em></h2>
+
+      <p class="body-text">
+        Scientific attribution requires convergent evidence. A single dataset showing rising temperatures 
+        could reflect regional climate variability, not urbanisation. But when four independent 
+        satellite-derived datasets — spanning different sensors, different physical mechanisms, 
+        and different spatial resolutions — all point in the same direction, a coherent causal 
+        narrative emerges.
+      </p>
+
+      <div class="pull-quote">
+        <p>"As impervious surfaces expanded from 55% to 67% of Pune's municipal area, and as integrated 
+        nighttime radiance nearly doubled, the nocturnal heat island maintained a consistent excess 
+        of +1.3°C to +1.9°C above the rural reference — a pattern physically consistent with 
+        increased anthropogenic heat emission and reduced vegetative cooling."</p>
+        <cite>Synthesised from M2, M3, M8, M9 analyses — Pune Urban Heat Framework (2026)</cite>
+      </div>
+
+      <!-- Four evidence cards -->
+      <div class="evidence-grid reveal">
+        <div class="evidence-card">
+          <p class="evidence-number">01</p>
+          <p class="evidence-title">Thermal Stratification (M2)</p>
+          <p class="evidence-body">
+            Per-pixel regression of LST vs. NDVI across 3,000 sampled Landsat pixels 
+            confirms a strong inverse relationship. Impervious built-up surfaces 
+            register the highest mean LST — a direct consequence of low albedo and 
+            high thermal capacity of asphalt and concrete.
+          </p>
+        </div>
+        <div class="evidence-card">
+          <p class="evidence-number">02</p>
+          <p class="evidence-title">Persistent Nocturnal UHI (M3)</p>
+          <p class="evidence-body">
+            The nocturnal SUHI averaged <strong>+1.6°C</strong> above the rural reference 
+            consistently across 2013–2026, peaking at +1.93°C (2017). Sensitivity analysis 
+            across three independent reference masks confirms this is a real physical 
+            signal, not methodological artefact.
+          </p>
+        </div>
+        <div class="evidence-card">
+          <p class="evidence-number">03</p>
+          <p class="evidence-title">Rapid Land Cover Conversion (M8)</p>
+          <p class="evidence-body">
+            Built-up area expanded by <strong>+63.4 km²</strong> (+21.3%) in 8 years, 
+            while total vegetated area fell from 103.4 km² to 40.1 km² — a 61% 
+            collapse in the natural cooling infrastructure. Cropland conversion 
+            to built-up areas accounts for the majority of this flux.
+          </p>
+        </div>
+        <div class="evidence-card">
+          <p class="evidence-number">04</p>
+          <p class="evidence-title">Intensifying Night Lights (M9)</p>
+          <p class="evidence-body">
+            Integrated VIIRS radiance increased by <strong>+88%</strong> from 2013 to 2026. 
+            High-intensity lit area (&gt;5 nW cm⁻² sr⁻¹) expanded from 354 to 481 km² 
+            (+35.8%), indicating not just spatial spread but densification of 
+            energy-intensive activity — a direct driver of anthropogenic heat emission.
+          </p>
+        </div>
+      </div>
+
+      <!-- Linkage narrative -->
+      <div class="linkage-row reveal">
+        <p class="linkage-number">I</p>
+        <div class="linkage-content">
+          <p class="linkage-title">Spatial Overlap</p>
+          <p class="body-text" style="margin:0">
+            The areas of strongest NTL intensification between 2013 and 2026 — eastern Pune, 
+            Hadapsar, Kharadi — correspond geographically to the areas of highest Built Surface 
+            Index (BSI) growth in the M2 archive and the highest SUHI hotspot persistence in M3. 
+            This spatial co-location across three independent datasets is not coincidental; 
+            it is the thermodynamic signature of rapid urbanisation.
+          </p>
+        </div>
+      </div>
+
+      <div class="linkage-row reveal">
+        <p class="linkage-number">II</p>
+        <div class="linkage-content">
+          <p class="linkage-title">Temporal Synchrony</p>
+          <p class="body-text" style="margin:0">
+            The two highest urban expansion years in M8 — 2018 (+17.6 km²/yr) and 2022 (+9.4 km²/yr) — 
+            correspond to the two sharpest jumps in total NTL radiance (+12.6% in 2018 and +17.4% in 2022). 
+            This temporal synchrony between land cover conversion and light intensification confirms 
+            that both signals are tracking the same underlying process of urban development.
+          </p>
+        </div>
+      </div>
+
+      <div class="linkage-row reveal">
+        <p class="linkage-number">III</p>
+        <div class="linkage-content">
+          <p class="linkage-title">Physical Mechanism</p>
+          <p class="body-text" style="margin:0">
+            The physical pathway connecting these four observations is well-established in urban 
+            climate science: (<em>a</em>) agricultural and vegetated land is converted to impervious surface; 
+            (<em>b</em>) impervious surface absorbs more solar radiation (lower albedo) and cannot cool 
+            via evapotranspiration; (<em>c</em>) increased economic activity generates anthropogenic 
+            heat visible as brightening NTL; (<em>d</em>) the combined effect produces a persistent 
+            nocturnal UHI as stored heat is radiated after sunset. Each link in this chain 
+            is independently evidenced in the Pune datasets.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ════════════════ §9 CONCLUSION ════════════════ -->
+    <div class="conclusion-block reveal" role="region" aria-label="Scientific conclusion">
+      <p class="section-chapter">Conclusion</p>
+      <h2 class="section-title">What changed, why it changed, and <em>what it means for Pune.</em></h2>
+
+      <p class="body-text">
+        Between 2013 and 2026, Pune's thermal landscape underwent a measurable, multi-faceted transformation. 
+        The daytime SUHI reveals a consistent thermal excess of <span class="data-inline warm">3–5°C</span> 
+        in the urban core relative to the rural reference. The nocturnal UHI has maintained 
+        <span class="data-inline cool">+1.3 to +1.9°C</span> above the rural baseline throughout the 
+        study period. These thermal signals are accompanied by a <span class="data-inline warm">+63.4 km²</span> 
+        expansion in impervious built-up area, a <span class="data-inline warn">61%</span> collapse in 
+        total vegetated and agricultural cover, and a <span class="data-inline warm">+88%</span> increase 
+        in integrated nighttime radiance — all within 8–13 years.
+      </p>
+      <p class="body-text">
+        The causal attribution is supported not by assumption but by physical evidence. Surfaces 
+        with higher NDVI are measurably cooler. Areas that transitioned to built-up cover show 
+        coincident increases in both LST and NTL radiance. The nocturnal UHI — driven by heat 
+        stored in the urban fabric — remains positive throughout the entire observation period, 
+        regardless of which reference mask is used to measure it.
+      </p>
+      <p class="body-text">
+        The implication for Pune's residents is not abstract. Urban heat is a health issue. 
+        The reduction of Pune's green area from 19% to 7.5% of municipal area in 8 years has 
+        eliminated a significant fraction of the city's natural thermal regulation capacity. 
+        The nocturnal temperatures recorded in the urban core — consistently warmer than the 
+        surrounding countryside — compromise the physiological recovery window that cooler 
+        nights would otherwise provide.
+      </p>
+      <p class="body-text">
+        Understanding <em>where</em> this thermal burden falls most heavily — across Pune's 
+        administrative wards — is the subject of the <a href="ward_heat_risk.html" 
+        style="color:rgba(245,176,65,0.8); text-decoration:underline; text-underline-offset:3px">
+        Ward Heat Risk analysis →</a>
+      </p>
+    </div>
+
+  </main>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-col">
+        <h3 class="footer-brand">Pune Urban Heat Framework</h3>
+        <p>A spatial data science and climate analytics project examining urban heat dynamics in Pune, Maharashtra.</p>
+      </div>
+      <div class="footer-col">
+        <p class="footer-col-head">Data Sources</p>
+        <p>USGS Landsat 8/9 (2013–2026)</p>
+        <p>NOAA VIIRS DNB (2013–2026)</p>
+        <p>ESRI Sentinel-2 LULC 10m</p>
+        <p>NASA MODIS Terra/Aqua LST</p>
+      </div>
+      <div class="footer-col">
+        <p class="footer-col-head">Methods</p>
+        <p>Theil-Sen slope estimation</p>
+        <p>Mann-Kendall trend analysis</p>
+        <p>Landsat LST compositing</p>
+        <p>Google Earth Engine processing</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-author">
+        <span class="footer-author-label">Designed &amp; Developed by</span>
+        <a class="footer-author-name" href="https://manasthepatra.github.io/"
+           target="_blank" rel="noopener noreferrer">Manas Ranjan Patra</a>
+      </div>
+      <div class="footer-credits">
+        <span class="footer-credits-label">Guided by</span>
+        <a href="https://www.linkedin.com/in/roxy-koll/"
+           target="_blank" rel="noopener noreferrer">Dr. Roxy Mathew Koll</a>
+        <a href="https://www.linkedin.com/in/dr-veena-b2370959/"
+           target="_blank" rel="noopener noreferrer">Dr. Veena Parihar</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ═══ SCRIPTS ═══ -->
+  <script src="js/site.js"></script>
+  <script>
+/* ===== LIGHTBOX (climate_evolution pattern) ===== */
+function openLB(src) {
+  document.getElementById('lb-img').src = src;
+  document.getElementById('lb').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLB() {
+  document.getElementById('lb').classList.remove('open');
+  document.body.style.overflow = '';
+  setTimeout(() => { document.getElementById('lb-img').src = ''; }, 300);
+}
+document.getElementById('lb').addEventListener('click', e => {
+  if (e.target === document.getElementById('lb')) closeLB();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
+
+/* ===== SCROLL REVEAL ===== */
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); revObs.unobserve(e.target); }
+  });
+}, { threshold: 0.07, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+
+/* ===== PROGRESS BAR ===== */
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+  const bar = document.getElementById('site-progress');
+  if (bar) bar.style.width = pct + '%';
+}, { passive: true });
+
+/* ===== GIF LAZY-LOAD (pause when off-screen, resume on entry) ===== */
+const gifDefs = [
+  { id: 'lulcGif',    src: 'data/pune_lulc_timelapse_2017_2025.gif' },
+  { id: 'ntlGif',     src: 'data/pune_ntl_timelapse.gif' },
+  { id: 'thermalGif', src: 'data/Pune_ThermalTimelapse_2013_2026.gif' }
+];
+if ('IntersectionObserver' in window) {
+  const gifObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      const def = gifDefs.find(g => g.id === e.target.id);
+      if (!def) return;
+      if (e.isIntersecting && e.target.dataset.paused) {
+        e.target.src = def.src + '?t=' + Date.now();
+        delete e.target.dataset.paused;
+      } else if (!e.isIntersecting) {
+        e.target.dataset.paused = '1';
+      }
+    });
+  }, { threshold: 0.05 });
+  gifDefs.forEach(d => {
+    const el = document.getElementById(d.id);
+    if (el) gifObs.observe(el);
+  });
+}
+  </script>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pune Urban Heat Framework</title>
+<meta name="description" content="Understanding how Pune is changing — an interactive report on heat risk, climate evolution, and thermal dynamics across India's fastest-growing city.">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Design System -->
+<link rel="stylesheet" href="css/design-system.css">
+<link rel="stylesheet" href="css/landing.css">
+
+<style>
+/* Override: on landing page the nav is transparent over the map */
+body.landing { overflow-x: hidden; }
+.site-nav { background: transparent; }
+.site-nav.scrolled { background: rgba(244,240,232,0.97); }
+.site-nav .nav-brand-text { color: var(--ink); }
+
+/* Leaflet overrides for light paper basemap feel */
+.leaflet-tile-pane { filter: saturate(0.12) brightness(1.06) sepia(0.08); }
+.leaflet-control-zoom { display: none !important; }
+.leaflet-attribution-flag { display: none !important; }
+.leaflet-control-attribution {
+  background: rgba(245,237,224,0.6) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 9px !important; color: var(--muted) !important;
+}
+
+/* Pune boundary layer styling */
+.pune-boundary-layer {
+  /* styled via Leaflet L.geoJSON style option */
+}
+</style>
+</head>
+
+<body class="landing">
+
+<!-- PROGRESS -->
+<div id="site-progress"></div>
+
+<!-- LIGHTBOX -->
+<div id="site-lightbox">
+  <button id="site-lightbox-close" aria-label="Close">&#x2715;</button>
+  <img id="site-lightbox-img" src="" alt="">
+</div>
+
+<!-- FIXED MAP STAGE -->
+<div id="map-stage">
+  <div id="landing-map"></div>
+</div>
+
+<!-- GLOBAL NAV -->
+<nav class="site-nav" role="navigation" aria-label="Main navigation">
+  <a class="nav-brand" href="index.html">
+    <div class="nav-brand-badge" aria-hidden="true">PMC</div>
+    <span class="nav-brand-text">Pune Urban Heat Framework</span>
+  </a>
+  <ul class="nav-links" role="list">
+    <li><a href="index.html" class="active" aria-current="page">Home</a></li>
+    <li><a href="ward_heat_risk.html">Ward Heat Risk</a></li>
+    <li><a href="climate_evolution.html">Climate Evolution</a></li>
+    <li><a href="thermal_evolution.html">Thermal Evolution</a></li>
+  </ul>
+  <button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="nav-mobile-menu" id="nav-mobile-menu" aria-hidden="true" role="dialog">
+  <button class="nav-mobile-close" id="nav-mobile-close" aria-label="Close menu">&#x2715;</button>
+  <a href="index.html" class="active">Home</a>
+  <a href="ward_heat_risk.html">Ward Heat Risk</a>
+  <a href="climate_evolution.html">Climate Evolution</a>
+  <a href="thermal_evolution.html">Thermal Evolution</a>
+</div>
+
+<!-- SCROLLABLE CONTENT LAYER -->
+<div id="scroll-content">
+
+  <!-- ===== HERO ===== -->
+  <section class="hero-section" aria-labelledby="hero-title">
+    <div class="hero-eyebrow" aria-hidden="true">Pune Urban Heat Framework · 2013–2026</div>
+    <h1 class="hero-title" id="hero-title">
+      Understanding<br>how Pune is<br><em>changing.</em>
+    </h1>
+    <p class="hero-subtitle">
+      A Summer Internship Project exploring how Pune's climate is evolving<br class="hide-mobile"> 
+      and how heat risk is changing across the city.
+    </p>
+    <div class="hero-scroll-cue interactive" aria-label="Scroll to explore">
+      <svg width="16" height="20" viewBox="0 0 16 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M8 2v12M3 10l5 7 5-7"/>
+      </svg>
+      Scroll to explore
+    </div>
+  </section>
+
+  <!-- ===== PULLQUOTE ===== -->
+  <section class="story-section reveal" aria-labelledby="pullquote-label">
+    <div class="pullquote" id="pullquote-label">
+      Pune's peak afternoon temperature barely moved in 37 years. But the city's nights are warmer, 
+      the hot season starts <em>three weeks earlier</em>, and the sleep-cool window has collapsed by 60%.
+    </div>
+    <p class="pullquote-meta">ERA5 Hourly Data · 1990–2026 · Pre-monsoon Season</p>
+  </section>
+
+  <!-- ===== NUMBERS INTERLUDE ===== -->
+  <section class="interlude-section" aria-label="Key statistics">
+    <div class="cards-section-label" aria-hidden="true">The numbers</div>
+    <div class="big-number-row reveal">
+      <div class="bn-cell">
+        <div class="bn-label">Night temp rise<br>(T<sub>min</sub>, 1990–2026)</div>
+        <div class="bn-value" aria-label="plus 2.2 degrees Celsius">+2.2°</div>
+        <div class="bn-sub">20.4°C → 22.6°C</div>
+      </div>
+      <div class="bn-cell">
+        <div class="bn-label">Sleep-cool hours<br>lost since 1990</div>
+        <div class="bn-value" aria-label="minus 60 percent">−60%</div>
+        <div class="bn-sub">3.8 hrs → 1.5 hrs nightly</div>
+      </div>
+      <div class="bn-cell">
+        <div class="bn-label">Season onset shift<br>(first hot day)</div>
+        <div class="bn-value" aria-label="minus 18 days">−18d</div>
+        <div class="bn-sub">Season 3 weeks earlier now</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== NAV CARDS ===== -->
+  <section class="cards-section interactive" aria-label="Explore modules">
+    <div class="cards-section-head reveal">
+      <div class="cards-section-label">Three explorations</div>
+      <h2 class="cards-section-title">
+        Choose your <em>entry point.</em>
+      </h2>
+    </div>
+
+    <div class="cards-grid reveal" role="list">
+
+      <!-- Card 1: Ward Heat Risk -->
+      <a class="site-card" href="ward_heat_risk.html" role="listitem"
+         aria-label="Explore Ward Heat Risk">
+        <div class="card-number" aria-hidden="true">01</div>
+        <div class="card-label">Interactive Dashboard</div>
+        <h3 class="card-title">Ward Heat Risk</h3>
+        <p class="card-sub">
+          Explore heat risk, social vulnerability, and thermal exposure 
+          across every ward of Pune. Click any ward for detailed metrics.
+        </p>
+        <div class="card-arrow" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 13L13 3M13 3H6M13 3v7"/>
+          </svg>
+        </div>
+      </a>
+
+      <!-- Card 2: Climate Evolution -->
+      <a class="site-card" href="climate_evolution.html" role="listitem"
+         aria-label="Read Climate Evolution">
+        <div class="card-number" aria-hidden="true">02</div>
+        <div class="card-label">Long-Form Story</div>
+        <h3 class="card-title">Climate Evolution</h3>
+        <p class="card-sub">
+          37 years of ERA5 hourly data reveal how Pune's nights are warming 
+          faster than its days — and what that means for 3.5 million people.
+        </p>
+        <div class="card-arrow" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 13L13 3M13 3H6M13 3v7"/>
+          </svg>
+        </div>
+      </a>
+
+      <!-- Card 3: Thermal Evolution -->
+      <a class="site-card" href="thermal_evolution.html" role="listitem"
+         aria-label="View Thermal Evolution">
+        <div class="card-number" aria-hidden="true">03</div>
+        <div class="card-label">Satellite Analysis</div>
+        <h3 class="card-title">Thermal Evolution</h3>
+        <p class="card-sub">
+          14 years of Landsat 30 m thermal imagery show Pune's heat island 
+          spreading outward as concrete replaces vegetation on every fringe.
+        </p>
+        <div class="card-arrow" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 13L13 3M13 3H6M13 3v7"/>
+          </svg>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer interactive" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-col">
+        <div class="footer-brand">Pune Urban Heat Framework</div>
+        <p>A spatial data science & climate analytics project examining urban heat dynamics in Pune, Maharashtra.</p>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-head">Data Sources</div>
+        <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo ERA5 Archive</a>
+        <a href="https://earthengine.google.com" target="_blank" rel="noopener">Google Earth Engine · Landsat 8/9</a>
+        <a href="https://pmc.gov.in" target="_blank" rel="noopener">Pune Municipal Corporation GIS</a>
+        <a href="https://censusindia.gov.in" target="_blank" rel="noopener">Census of India 2011</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-head">Methods</div>
+        <p>ERA5 hourly data · Mann-Kendall trend analysis · Theil-Sen slope estimation · Landsat LST compositing · Ward-level heat risk framework (H×E×V)</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-author">
+        <span class="footer-author-label">Designed &amp; Developed by</span>
+        <a class="footer-author-name" href="https://manasthepatra.github.io/"
+           target="_blank" rel="noopener noreferrer">Manas Ranjan Patra</a>
+      </div>
+      <div class="footer-credits">
+        <span class="footer-credits-label">Guided by</span>
+        <a href="https://www.linkedin.com/in/roxy-koll/"
+           target="_blank" rel="noopener noreferrer">Dr. Roxy Mathew Koll</a>
+        <a href="https://www.linkedin.com/in/dr-veena-b2370959/"
+           target="_blank" rel="noopener noreferrer">Dr. Veena Parihar</a>
+      </div>
+    </div>
+  </footer>
+
+</div><!-- /scroll-content -->
+
+<!-- JS -->
+<script src="js/site.js"></script>
+<script>
+/* ============================================================
+   LANDING MAP
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialise Leaflet map centered on Pune — NO interaction
+  const map = L.map('landing-map', {
+    center: [18.5204, 73.8567],
+    zoom: 11,
+    zoomControl: false,
+    scrollWheelZoom: false,
+    dragging: false,
+    touchZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false,
+    attributionControl: true,
+  });
+
+  // Light Carto Positron basemap — looks like paper
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+    maxZoom: 18,
+  }).addTo(map);
+
+  // Load Pune boundary
+  fetch('data/pune_boundary_m1.geojson')
+    .then(r => r.json())
+    .then(data => {
+      L.geoJSON(data, {
+        style: {
+          color: 'rgba(58,80,104,0.60)',
+          weight: 1.8,
+          fillColor: 'rgba(58,80,104,0.04)',
+          fillOpacity: 1,
+          dashArray: null,
+        }
+      }).addTo(map);
+    })
+    .catch(() => {
+      // Fallback: try the other boundary
+      fetch('data/pune_boundary.geojson')
+        .then(r => r.json())
+        .then(data => {
+          L.geoJSON(data, {
+            style: {
+              color: 'rgba(58,80,104,0.55)',
+              weight: 1.8,
+              fillColor: 'rgba(58,80,104,0.03)',
+              fillOpacity: 1,
+            }
+          }).addTo(map);
+        });
+    });
+
+  // Also load ward outlines very subtly
+  fetch('data/pune_admin.geojson')
+    .then(r => r.json())
+    .then(data => {
+      L.geoJSON(data, {
+        style: {
+          color: 'rgba(58,80,104,0.14)',
+          weight: 0.7,
+          fillColor: 'transparent',
+          fillOpacity: 0,
+        }
+      }).addTo(map);
+    })
+    .catch(() => {}); // optional — don't error if missing
+
+  // Subtle parallax: shift map slightly on scroll
+  window.addEventListener('scroll', () => {
+    const ratio = window.scrollY / window.innerHeight;
+    const el = document.getElementById('landing-map');
+    el.style.transform = `translateY(${ratio * 40}px)`;
+  }, { passive: true });
+});
+</script>
+
+</body>
+</html>

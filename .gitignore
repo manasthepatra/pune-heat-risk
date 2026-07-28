@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────
+# Pune Urban Heat Framework — GitHub Pages .gitignore
+# ─────────────────────────────────────────────────────────────
+
+# GeoTIFF raster files — raw scientific data used only by
+# Jupyter notebooks; NOT referenced by any HTML page.
+# Excluding keeps the repo at ~28 MB instead of ~192 MB.
+# The website functions identically without them on GitHub Pages.
+*.tif
+*.tiff
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+*.ipynb
+
+# Node (if ever used locally)
+node_modules/
+
+# IDE
+.vscode/
+.idea/

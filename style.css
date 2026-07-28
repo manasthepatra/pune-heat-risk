@@ -1,0 +1,188 @@
+/* Pune Urban Heat Framework - Web GIS Dashboard Stylesheet */
+:root {
+  --bg-primary: #0a0f1d;
+  --bg-secondary: #131b2e;
+  --bg-card: rgba(23, 32, 54, 0.85);
+  --border-color: rgba(255, 255, 255, 0.12);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --accent-cyan: #00f2fe;
+  --accent-blue: #4facfe;
+  --accent-red: #ff4e50;
+  --accent-orange: #f9d423;
+  --accent-green: #00b09b;
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Navbar */
+header.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.5rem;
+  background: rgba(10, 15, 29, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 1000;
+  height: 65px;
+}
+
+.brand { display: flex; align-items: center; gap: 0.75rem; }
+.brand-icon { font-size: 1.8rem; background: linear-gradient(135deg, var(--accent-red), var(--accent-orange)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; }
+.brand-text h1 { font-size: 1.2rem; font-weight: 700; background: linear-gradient(135deg, #ffffff, var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.brand-text p { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+
+.nav-links { display: flex; gap: 0.5rem; }
+.nav-tab { background: transparent; border: 1px solid transparent; color: var(--text-secondary); padding: 0.45rem 0.9rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+.nav-tab:hover, .nav-tab.active { color: #fff; background: rgba(79, 172, 254, 0.18); border-color: rgba(79, 172, 254, 0.4); box-shadow: 0 0 12px rgba(0, 242, 254, 0.25); }
+.external-link { text-decoration: none; display: inline-flex; align-items: center; }
+
+/* Dashboard Split Layout */
+.dashboard-container {
+  display: flex;
+  flex: 1;
+  height: calc(100vh - 65px);
+}
+
+.glass-panel { 
+  background: var(--bg-card); 
+  backdrop-filter: blur(16px); 
+  border: 1px solid var(--border-color); 
+}
+
+/* Sidebar */
+.sidebar {
+  width: 400px;
+  min-width: 400px;
+  height: 100%;
+  border-right: 1px solid var(--border-color);
+  border-radius: 0;
+  padding: 1.5rem;
+  overflow-y: auto;
+  box-shadow: 2px 0 15px rgba(0,0,0,0.5);
+  z-index: 500;
+}
+
+.module-panel { display: none; }
+.module-panel.active { display: block; animation: fadeIn 0.4s ease; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.module-panel h2 { font-size: 1.3rem; color: var(--accent-cyan); margin-bottom: 0.3rem; }
+.module-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5; }
+
+.control-section { margin-bottom: 1.5rem; }
+.control-section h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.4rem; }
+
+.layer-btn { 
+  width: 100%; 
+  padding: 0.75rem 1rem; 
+  margin-bottom: 0.5rem; 
+  background: rgba(0,0,0,0.3); 
+  border: 1px solid var(--border-color); 
+  border-radius: 8px; 
+  color: var(--text-secondary); 
+  text-align: left; 
+  font-size: 0.85rem; 
+  font-weight: 500; 
+  cursor: pointer; 
+  transition: all 0.2s ease; 
+}
+.layer-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.layer-btn.active { 
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.25), rgba(0, 242, 254, 0.1)); 
+  border-color: var(--accent-cyan); 
+  color: #fff; 
+  font-weight: 600; 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.explanation-box {
+  background: rgba(0,0,0,0.2);
+  border-left: 3px solid var(--accent-blue);
+  padding: 1rem;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.figure-container { margin-bottom: 1.5rem; }
+.figure-title { font-size: 0.85rem; color: var(--text-primary); margin-bottom: 0.5rem; }
+
+.slider-container { display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; }
+input[type=range] { flex: 1; accent-color: var(--accent-cyan); }
+.year-badge { background: var(--accent-blue); color: #fff; padding: 0.3rem 0.6rem; border-radius: 4px; font-weight: bold; font-size: 0.85rem; }
+
+/* Main Map */
+.map-wrapper { 
+  flex: 1; 
+  position: relative; 
+  height: 100%;
+}
+#map { width: 100%; height: 100%; background: #0d1322; z-index: 100; }
+
+.map-overlay-legend { 
+  position: absolute; 
+  bottom: 25px; 
+  right: 25px; 
+  background: rgba(10, 15, 29, 0.9); 
+  backdrop-filter: blur(10px); 
+  border: 1px solid var(--border-color); 
+  border-radius: 10px; 
+  padding: 1rem; 
+  z-index: 800; 
+  font-size: 0.8rem; 
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+#legend-title { display: block; margin-bottom: 0.5rem; color: #fff; font-size: 0.85rem; }
+.legend-item { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem; color: var(--text-secondary); }
+.legend-color { width: 18px; height: 14px; border-radius: 3px; }
+
+/* Hover Card Overlay */
+.ward-hover-card {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  width: 280px;
+  padding: 1rem;
+  z-index: 800;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  pointer-events: none; /* So mouse doesn't get stuck */
+}
+#hover-title { font-size: 1.05rem; color: var(--accent-cyan); margin-bottom: 0.8rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem; }
+.hover-row { display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem; }
+.hover-lbl { color: var(--text-secondary); }
+.hover-val { color: #fff; font-weight: 600; text-align: right; }
+.val-high { color: var(--accent-red); }
+
+/* Timelapse GIF container inside map */
+.timelapse-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 700; /* above map, below controls */
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.timelapse-overlay img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+}

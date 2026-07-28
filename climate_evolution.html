@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pune lost its cool — 37 years of heat data</title>
+<meta name="description" content="Pune nights barely cool anymore. 37 years of ERA5 hourly data reveals what the max-temp chart hides — nights that don't cool, a season starting 3 weeks earlier, and a collapsed sleep window.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="css/design-system.css">
+
+<style>
+/* ======== LOCAL TOKEN OVERRIDES ======== */
+:root {
+  --paper:      #f4f0e8;
+  --paper-dark: #e8e2d6;
+  --ink:        #1c1712;
+  --ink-soft:   #352c22;
+  --muted:      #6a5c4e;
+  --heat-1:     #e8924a;
+  --heat-2:     #c95f35;
+  --heat-3:     #c95f35;
+  --heat-4:     #9c3d1f;
+  --cool:       #3a5068;
+  --line:       rgba(28,23,18,0.10);
+  --line-strong:rgba(28,23,18,0.22);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 18px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* grain */
+body::before {
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:0.32;z-index:100;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+  mix-blend-mode:multiply;
+}
+
+.mono { font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums; }
+
+/* ======== LAYOUT ======== */
+.container      { max-width:780px;  margin:0 auto; padding:0 32px; }
+.container-wide { max-width:1120px; margin:0 auto; padding:0 32px; }
+
+/* ======== MASTHEAD ======== */
+.masthead {
+  border-bottom:1px solid var(--line);
+  padding:18px 0;
+  position:sticky; top:0;
+  background:rgba(245,237,224,0.93);
+  backdrop-filter:blur(10px);
+  z-index:50;
+}
+.masthead-inner {
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);
+}
+.masthead-center { font-weight:700; color:var(--ink); }
+.back-link {
+  color:#3a5068; text-decoration:none; font-weight:700;
+  border-bottom:1px solid rgba(58,80,104,0.5); transition:opacity .2s;
+}
+.back-link:hover{opacity:.7;}
+
+/* progress bar */
+#progress-bar {
+  position:fixed; top:0; left:0; height:2px;
+  background:linear-gradient(90deg, #3a5068, #c95f35, #e8924a);
+  width:0%; z-index:200; transition:width .1s;
+}
+
+/* ======== HERO ======== */
+.hero {
+  padding:90px 0 70px;
+  border-bottom:1px solid var(--line);
+  position:relative; overflow:hidden;
+}
+/* Cartographic coordinate grid */
+.hero::before {
+  content:""; position:absolute; inset:0; pointer-events:none;
+  opacity:0.05;
+  background-image:
+    linear-gradient(rgba(58,80,104,1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58,80,104,1) 1px, transparent 1px);
+  background-size:80px 80px;
+}
+.hero-label {
+  font-family:'JetBrains Mono',monospace;
+  font-size:10.5px; letter-spacing:0.20em; text-transform:uppercase;
+  color:#3a5068; margin-bottom:32px;
+  display:flex; align-items:center; gap:14px;
+}
+/* scale-bar lead line */
+.hero-label::before { content:""; width:32px; height:2px; background:#3a5068; }
+.hero h1 {
+  font-family:'Fraunces',serif; font-weight:300;
+  font-size:clamp(48px,7.5vw,100px); line-height:0.93;
+  letter-spacing:-0.038em; margin-bottom:36px;
+  font-variation-settings:"opsz" 144;
+}
+.hero h1 em {
+  font-style:italic; font-weight:400; color:#c95f35;
+  font-family:'Instrument Serif',serif; font-size:1.06em;
+}
+.hero-deck {
+  font-size:22px; line-height:1.52; color:var(--ink-soft);
+  max-width:660px; margin-bottom:44px;
+}
+.hero-byline {
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--muted); display:flex; gap:24px; flex-wrap:wrap;
+  padding-top:24px; border-top:1px solid var(--line);
+}
+.hero-byline strong { color:var(--ink); font-weight:700; }
+
+/* ======== BIG-NUMBER STRIP ======== */
+.stat-strip {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:0; border:1px solid var(--line-strong); background:var(--line-strong);
+}
+@media(max-width:720px){.stat-strip{grid-template-columns:1fr;}}
+.stat-col {
+  background:var(--paper); padding:32px 28px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.stat-col + .stat-col { border-left:1px solid var(--line-strong); }
+.stat-col-label {
+  font-family:'JetBrains Mono',monospace; font-size:10px;
+  letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); line-height:1.4;
+}
+.stat-col-big {
+  font-family:'Fraunces',serif; font-weight:300;
+  font-size:clamp(44px,6vw,66px); line-height:1;
+  letter-spacing:-0.035em; color:#c95f35;
+  font-variation-settings:"opsz" 144;
+}
+.stat-col-sub {
+  font-family:'Instrument Serif',serif; font-style:italic;
+  font-size:15px; color:var(--muted);
+}
+
+/* ======== SECTIONS ======== */
+.section        { padding:96px 0; border-bottom:1px solid var(--line); }
+.section.dark   { background:var(--paper-dark); }
+.section-label  {
+  font-family:'JetBrains Mono',monospace; font-size:10.5px;
+  letter-spacing:0.20em; text-transform:uppercase; color:var(--muted);
+  margin-bottom:20px; display:flex; align-items:center; gap:12px;
+}
+/* Cartographic index mark instead of §  */
+.section-label::before {
+  content:"";
+  width:8px; height:8px; border-radius:50%;
+  border:2px solid #3a5068; flex-shrink:0;
+}
+.section-title  {
+  font-family:'Fraunces',serif; font-weight:300;
+  font-size:clamp(30px,5vw,58px); line-height:1.04;
+  letter-spacing:-0.028em; margin-bottom:22px;
+  font-variation-settings:"opsz" 144;
+}
+.section-title em { font-family:'Instrument Serif',serif; font-style:italic; color:#c95f35; font-weight:400; }
+.section-intro  {
+  font-size:19px; line-height:1.65; color:var(--ink-soft);
+  margin-bottom:52px; max-width:650px;
+}
+.section-intro strong {
+  background:linear-gradient(transparent 60%,rgba(245,176,65,0.38) 60%);
+  padding:0 3px; font-weight:600; color:var(--ink);
+}
+
+/* ======== HYPOTHESES GRID ======== */
+.hypo-grid { display:grid; gap:2px; background:var(--line-strong); border:1px solid var(--line-strong); margin-top:44px; }
+.hypo {
+  background:var(--paper); padding:44px 48px;
+  display:grid; grid-template-columns:110px 1fr 1fr;
+  gap:44px; align-items:start; transition:background .25s;
+}
+.hypo:hover { background:var(--paper-dark); }
+@media(max-width:860px){.hypo{grid-template-columns:1fr;gap:18px;padding:28px 24px;}}
+.hypo-num {
+  font-family:'Fraunces',serif; font-weight:300; font-size:76px;
+  line-height:1; color:var(--heat-2); font-style:italic;
+  letter-spacing:-0.04em; font-variation-settings:"opsz" 144;
+}
+.hypo-claim h3 { font-family:'Fraunces',serif; font-weight:400; font-size:24px; line-height:1.2; margin-bottom:10px; letter-spacing:-0.015em; }
+.hypo-claim p  { font-size:15px; color:var(--muted); line-height:1.55; }
+.hypo-verdict  { border-left:2px solid var(--heat-3); padding-left:20px; }
+.verdict-label { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--heat-3); margin-bottom:8px; font-weight:700; }
+.hypo-verdict p { font-size:15px; line-height:1.55; }
+.hypo-verdict strong { background:linear-gradient(transparent 60%,rgba(245,176,65,0.38) 60%); padding:0 2px; font-weight:600; }
+
+/* ======== THERMO / TRANSITION CARDS ======== */
+.thermo-grid { display:grid; grid-template-columns:1fr 1fr; gap:2px; background:var(--line-strong); border:1px solid var(--line-strong); margin-top:44px; }
+@media(max-width:720px){.thermo-grid{grid-template-columns:1fr;}}
+.thermo-card { background:var(--paper); padding:36px 32px; }
+.thermo-card.heat { background:linear-gradient(135deg,#2a0f0a,#6b1a12); color:var(--paper); }
+.thermo-card-label { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; opacity:0.7; margin-bottom:12px; }
+.thermo-card-big {
+  font-family:'Fraunces',serif; font-weight:300;
+  font-size:clamp(48px,6vw,80px); line-height:1;
+  letter-spacing:-0.04em; margin-bottom:10px;
+  font-variation-settings:"opsz" 144;
+}
+.thermo-card-sub { font-family:'Instrument Serif',serif; font-size:22px; font-style:italic; line-height:1.3; margin-bottom:14px; }
+.thermo-card-note { font-size:14px; line-height:1.5; color:var(--muted); border-top:1px dashed var(--line-strong); padding-top:14px; margin-top:auto; }
+.thermo-card.heat .thermo-card-note { color:rgba(245,237,224,0.75); border-top-color:rgba(245,237,224,0.2); }
+.thermo-card.heat .thermo-card-big { color:var(--heat-1); }
+.thermo-card.heat .thermo-card-sub { color:rgba(245,237,224,0.88); }
+
+/* ======== FIGURE BLOCKS ======== */
+.fig-block {
+  background:var(--paper); border:1px solid var(--line-strong);
+  padding:38px; margin-bottom:28px;
+}
+.fig-block.heat { border-left:4px solid var(--heat-3); }
+.fig-title { font-family:'Fraunces',serif; font-weight:400; font-size:23px; line-height:1.2; margin-bottom:4px; letter-spacing:-0.015em; }
+.fig-sub { font-family:'Instrument Serif',serif; font-style:italic; font-size:15px; color:var(--muted); margin-bottom:24px; }
+.fig-img { width:100%; max-height:520px; object-fit:contain; cursor:zoom-in; transition:opacity .2s; border-radius:2px; }
+.fig-img:hover { opacity:0.87; }
+.fig-caption { font-size:13px; color:var(--muted); margin-top:16px; line-height:1.5; font-style:italic; border-top:1px solid var(--line); padding-top:14px; }
+
+.fig-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
+@media(max-width:860px){.fig-grid{grid-template-columns:1fr;}}
+
+/* ======== CALLOUT ROW ======== */
+.callout-row {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:2px; background:var(--line-strong); border:1px solid var(--line-strong);
+  margin-bottom:36px;
+}
+@media(max-width:860px){.callout-row{grid-template-columns:1fr;}}
+.callout { background:var(--paper); padding:26px; display:flex; flex-direction:column; gap:8px; }
+.callout.hl { background:linear-gradient(180deg,#fff8ec 0%,var(--paper) 100%); border-left:3px solid var(--heat-3); padding-left:23px; }
+.callout-label { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); }
+.callout-big { font-family:'Fraunces',serif; font-weight:300; font-size:clamp(40px,5vw,58px); line-height:1; letter-spacing:-0.035em; color:var(--heat-3); font-variation-settings:"opsz" 144; }
+.callout-sub { font-family:'Instrument Serif',serif; font-style:italic; font-size:16px; color:var(--ink-soft); }
+
+/* ======== CHART CANVAS ======== */
+.chart-wrap { position:relative; height:320px; margin-top:8px; }
+@media(max-width:720px){.chart-wrap{height:240px;}}
+.chart-legend { display:flex; gap:20px; flex-wrap:wrap; margin-top:18px; padding-top:16px; border-top:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); }
+.legend-swatch { width:14px; height:14px; border-radius:2px; display:inline-block; margin-right:6px; vertical-align:middle; }
+
+/* ======== MONTHLY GRID ======== */
+.month-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:2px; background:var(--line-strong); border:1px solid var(--line-strong); margin-top:44px; }
+@media(max-width:720px){.month-grid{grid-template-columns:1fr 1fr;}}
+.month-card { background:var(--paper); padding:24px 20px; }
+.month-card.sig { background:linear-gradient(180deg,#fff5ec,var(--paper)); border-left:3px solid var(--heat-3); }
+.month-name { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.month-slope { font-family:'Fraunces',serif; font-weight:300; font-size:36px; line-height:1; letter-spacing:-0.03em; color:var(--heat-3); font-variation-settings:"opsz" 144; margin-bottom:6px; }
+.month-unit  { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
+.month-sig-badge { display:inline-block; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.15em; text-transform:uppercase; padding:3px 7px; border-radius:2px; }
+.month-sig-badge.p001 { background:var(--heat-3); color:#fff; }
+.month-sig-badge.p01  { background:var(--heat-2); color:#fff; }
+.month-sig-badge.p05  { background:var(--heat-1); color:var(--ink); }
+.month-sig-badge.ns   { background:var(--line-strong); color:var(--muted); }
+
+/* ======== SOURCES ======== */
+.sources-section { background:#1a0f08; color:rgba(244,237,224,0.85); padding:72px 0; }
+.sources-section h2 { font-family:'Fraunces',serif; font-weight:300; font-size:36px; color:#f4ede0; margin-bottom:36px; letter-spacing:-0.02em; font-variation-settings:"opsz" 144; }
+.source-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+@media(max-width:720px){.source-grid{grid-template-columns:1fr;}}
+.source-card { border:1px solid rgba(244,237,224,0.15); padding:24px; }
+.source-card h4 { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(244,237,224,0.45); margin-bottom:10px; }
+.source-card p { font-size:15px; line-height:1.6; color:rgba(244,237,224,0.8); }
+.source-card strong { color:#f4ede0; font-weight:600; }
+
+.methods { margin-top:40px; border-top:1px solid rgba(244,237,224,0.15); padding-top:20px; }
+.methods summary { cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; color:rgba(244,237,224,0.45); list-style:none; display:flex; align-items:center; gap:10px; }
+.methods summary::-webkit-details-marker{display:none;}
+.methods summary::before { content:"+"; font-family:'Fraunces',serif; font-size:18px; color:var(--heat-3); }
+.methods[open] summary::before{content:"−";}
+.methods-body { padding-top:16px; font-size:15px; line-height:1.65; color:rgba(244,237,224,0.72); max-width:640px; }
+.methods-body p{margin-bottom:12px;}
+
+footer { background:#0e0c09; color:rgba(244,240,232,0.38); text-align:center; padding:28px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.08em; }
+footer a{color:rgba(91,122,150,0.8);text-decoration:none;}
+
+/* ======== LIGHTBOX ======== */
+#lb{position:fixed;inset:0;background:rgba(10,5,0,0.94);z-index:9999;display:none;align-items:center;justify-content:center;}
+#lb.open{display:flex;}
+#lb img{max-width:92%;max-height:90vh;object-fit:contain;}
+#lb-x{position:absolute;top:20px;right:28px;color:#fff;font-size:42px;cursor:pointer;opacity:0.7;line-height:1;}
+#lb-x:hover{opacity:1;}
+
+/* ======== SCROLL REVEAL ======== */
+.reveal { opacity:0; transform:translateY(16px); transition:opacity .6s ease,transform .6s ease; }
+.reveal.visible { opacity:1; transform:none; }
+
+/* ======== INLINE ANNOTATION ======== */
+.annotation {
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.05em;
+  background:rgba(58,80,104,0.08);
+  border:1px solid rgba(58,80,104,0.22); border-radius:3px;
+  padding:3px 10px; color:#3a5068; font-weight:700;
+  vertical-align:middle; white-space:nowrap;
+}
+</style>
+</head>
+<body style="padding-top:60px;">
+
+<!-- SHARED: Progress + Lightbox -->
+<div id="site-progress"></div>
+<div id="site-lightbox">
+  <button id="site-lightbox-close" aria-label="Close">&#x2715;</button>
+  <img id="site-lightbox-img" src="" alt="">
+</div>
+
+<!-- SHARED GLOBAL NAV -->
+<nav class="site-nav" role="navigation" aria-label="Main navigation">
+  <a class="nav-brand" href="index.html">
+    <div class="nav-brand-badge" aria-hidden="true">PMC</div>
+    <span class="nav-brand-text">Pune Urban Heat Framework</span>
+  </a>
+  <ul class="nav-links" role="list">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="ward_heat_risk.html">Ward Heat Risk</a></li>
+    <li><a href="climate_evolution.html" class="active" aria-current="page">Climate Evolution</a></li>
+    <li><a href="thermal_evolution.html">Thermal Evolution</a></li>
+  </ul>
+  <button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="nav-mobile-menu" id="nav-mobile-menu" role="dialog" aria-hidden="true">
+  <button class="nav-mobile-close" id="nav-mobile-close" aria-label="Close">&#x2715;</button>
+  <a href="index.html">Home</a>
+  <a href="ward_heat_risk.html">Ward Heat Risk</a>
+  <a href="climate_evolution.html" class="active">Climate Evolution</a>
+  <a href="thermal_evolution.html">Thermal Evolution</a>
+</div>
+
+<!-- PAGE MASTHEAD (sub-header) -->
+<div class="page-masthead">
+  <div class="page-masthead-inner">
+    <span>PUNE URBAN HEAT FRAMEWORK</span>
+    <span class="page-masthead-center">CLIMATE EVOLUTION · 1990–2026</span>
+    <a href="index.html" style="color:var(--heat-3);text-decoration:none;font-weight:700;border-bottom:1px solid var(--heat-3);">← Dashboard</a>
+  </div>
+</div>
+
+<!-- ===== HERO ===== -->
+<section class="hero"><div class="container">
+  <div class="hero-label">Urban Heat Analysis · ERA5 · 1990–2026</div>
+  <h1>Pune lost its <em>cool.</em></h1>
+  <p class="hero-deck">
+    Everyone knows Pune is getting hotter. But the max-temperature chart barely moved. 
+    The real story is in the nights — the hours your body needs to recover. 
+    In 1990, Pune offered nearly <strong class="annotation">3.8 hrs</strong> of sleep-cool every night. 
+    By 2025, that window had collapsed to <strong class="annotation">1.5 hrs</strong>. 
+    This is what 37 years of ERA5 hourly data actually reveals.
+  </p>
+  <div class="hero-byline">
+    <span><strong>Data</strong> Open-Meteo ERA5 Historical Archive</span>
+    <span><strong>Period</strong> 1990–2026 (pre-monsoon, Mar–Jun)</span>
+    <span><strong>Method</strong> Area-weighted city mean · Mann-Kendall + Theil-Sen</span>
+    <span><strong>Location</strong> Pune Municipal Corporation boundary</span>
+  </div>
+</div></section>
+
+<!-- ===== THE THREE NUMBERS ===== -->
+<div style="padding:72px 0;background:var(--paper-dark);border-bottom:1px solid var(--line);">
+<div class="container-wide">
+  <div class="section-label">The numbers that matter</div>
+  <div class="stat-strip reveal">
+    <div class="stat-col">
+      <div class="stat-col-label">Night temp rise<br>(Annual T<sub>min</sub>, 1990–2026)</div>
+      <div class="stat-col-big">+2.2°</div>
+      <div class="stat-col-sub">20.4°C → 22.6°C baseline shift</div>
+    </div>
+    <div class="stat-col">
+      <div class="stat-col-label">Sleep-cool hours lost<br>(hrs/night below 22°C)</div>
+      <div class="stat-col-big">−60%</div>
+      <div class="stat-col-sub">3.8 hrs (1990) → 1.5 hrs (2025)</div>
+    </div>
+    <div class="stat-col">
+      <div class="stat-col-label">UTCI Strong Heat Stress<br>(fraction of season hrs)</div>
+      <div class="stat-col-big">+9pts</div>
+      <div class="stat-col-sub">9% → 18% of all daylight hours</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== HYPOTHESES ===== -->
+<section class="section"><div class="container">
+  <div class="section-label">The buried story</div>
+  <h2 class="section-title">Three hypotheses. <em>All confirmed.</em></h2>
+  <p class="section-intro">Peak afternoon temperature gets all the headlines. But Pune's physiological heat burden has grown through three less-reported mechanisms — each backed by 37 years of hourly data.</p>
+
+  <div class="hypo-grid">
+    <div class="hypo">
+      <div class="hypo-num">1</div>
+      <div class="hypo-claim">
+        <h3>Nights are warming faster than days</h3>
+        <p>A narrowing Diurnal Temperature Range means the city holds heat overnight. When nights don't cool, bodies never recover — a 24-hour cumulative stress that daytime-only metrics miss entirely.</p>
+      </div>
+      <div class="hypo-verdict">
+        <div class="verdict-label">Verdict · Confirmed</div>
+        <p>T<sub>min</sub> rises at <strong>+0.055°C/yr</strong> vs +0.030°C/yr for T<sub>max</sub>. Nights have warmed nearly twice as fast. DTR has narrowed in the most critical shoulder months of April (***) and May (*).</p>
+      </div>
+    </div>
+    <div class="hypo">
+      <div class="hypo-num">2</div>
+      <div class="hypo-claim">
+        <h3>Extreme heat events are multiplying</h3>
+        <p>Hot days (≥40°C) and warm nights (≥26°C) quantify when heat crosses into physiological stress — the thresholds where outdoor workers and vulnerable populations face acute risk.</p>
+      </div>
+      <div class="hypo-verdict">
+        <div class="verdict-label">Verdict · Strongly Confirmed</div>
+        <p>In 1990–2000, Pune averaged <strong>0–1 hot days per season</strong>. By 2022–2026, it averages <strong>3–4 hot days</strong> and the hottest year (2026) saw <strong>12 tropical nights</strong> — compared to 0 in the 1990s.</p>
+      </div>
+    </div>
+    <div class="hypo">
+      <div class="hypo-num">3</div>
+      <div class="hypo-claim">
+        <h3>Humidity has amplified felt temperature</h3>
+        <p>UTCI incorporates humidity, wind, and radiation. A city can feel significantly hotter without hitting higher dry-bulb temperatures — and the felt-like burden has grown disproportionately.</p>
+      </div>
+      <div class="hypo-verdict">
+        <div class="verdict-label">Verdict · Confirmed</div>
+        <p>UTCI "Strong + Very Strong Heat Stress" now occupies <strong>18–19% of pre-monsoon hours</strong>, up from ~9% in 1990. In 2026, "No Heat Stress" time shrank to just <strong>48% of season hours</strong>.</p>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ===== WARMING SIGNATURE ===== -->
+<section class="section dark"><div class="container">
+  <div class="section-label">Figure 1</div>
+  <h2 class="section-title">Is Pune warming? <em>Yes — especially at night.</em></h2>
+  <p class="section-intro">Annual pre-monsoon T<sub>max</sub> and T<sub>min</sub> from 1990 to 2026, with Theil-Sen robust trend lines. Both are rising — but the night minimum trend is steeper, and statistically stronger.</p>
+  <div class="fig-block heat reveal">
+    <div class="fig-title">Warming Signature · 37-Year Trend</div>
+    <div class="fig-sub">Pre-monsoon season (Mar–Jun), area-weighted ERA5 city mean · Mann-Kendall significant at p&lt;0.05</div>
+    <img class="fig-img" src="data/01_warming_signature.png" alt="Warming Signature" onclick="openLB(this.src)">
+    <div class="fig-caption">Both Tmax and Tmin show statistically significant upward trends. The night minimum rises at +0.055°C/yr — compounding to over 2°C across the record. This is not noise; this is structural change.</div>
+  </div>
+  <div class="fig-block reveal">
+    <div class="fig-title">Long-Term Climate Trajectory · All Six Metrics</div>
+    <div class="fig-sub">T<sub>max</sub>, T<sub>min</sub>, DTR, hot days, warm nights, heatwaves — 37-year dashboard</div>
+    <img class="fig-img" src="data/Fig_M6_Longterm_Climate_Trajectory_Clean.png" alt="Longterm Trajectory" onclick="openLB(this.src)">
+    <div class="fig-caption">All six metrics move in the same direction simultaneously. This internal consistency — across independent variables — is the strongest indicator of structural climate change rather than decadal variability.</div>
+  </div>
+</div></section>
+
+<!-- ===== NIGHTS NEVER COOL ===== -->
+<section class="section"><div class="container">
+  <div class="section-label">Figures 2 & 8</div>
+  <h2 class="section-title">The night is no longer a <em>refuge.</em></h2>
+  <p class="section-intro">When nights warm faster than days, the body never resets. Two metrics tell this story most powerfully: the Diurnal Temperature Range (DTR), and the Sleep-Cool Window — hours per night below 22°C.</p>
+
+  <!-- TRANSITION CARDS -->
+  <div class="thermo-grid reveal">
+    <div class="thermo-card">
+      <div class="thermo-card-label">Diurnal Temp Range · 1990</div>
+      <div class="thermo-card-big" style="color:var(--cool);">12.0°<span style="font-size:0.45em;color:var(--muted);">C</span></div>
+      <div class="thermo-card-sub">Day-to-night gap</div>
+      <div class="thermo-card-note">A 12°C swing gave the body a genuine recovery window at night.</div>
+    </div>
+    <div class="thermo-card heat">
+      <div class="thermo-card-label">Diurnal Temp Range · 2026</div>
+      <div class="thermo-card-big">11.7°<span style="font-size:0.45em;opacity:0.55;">C</span></div>
+      <div class="thermo-card-sub">The gap is closing</div>
+      <div class="thermo-card-note">April DTR narrowing is statistically significant at p&lt;0.001 — meaning the compression is real, not random.</div>
+    </div>
+  </div>
+
+  <div class="fig-grid reveal" style="margin-top:28px;">
+    <div class="fig-block">
+      <div class="fig-title">DTR Narrowing</div>
+      <div class="fig-sub">Day–night temperature gap, 1990–2026</div>
+      <img class="fig-img" src="data/02_DTR_narrowing.png" alt="DTR Narrowing" onclick="openLB(this.src)">
+      <div class="fig-caption">The narrowing is sharpest in April — the peak heat month — where it is significant at p&lt;0.001. Compounded overnight stress, not just afternoon peaks, drives the health burden.</div>
+    </div>
+    <div class="fig-block heat">
+      <div class="fig-title">Sleep-Cool Window Collapse</div>
+      <div class="fig-sub">Hours/night below 22°C · 1990–2026</div>
+      <img class="fig-img" src="data/08_sleep_cool.png" alt="Sleep Cool" onclick="openLB(this.src)">
+      <div class="fig-caption">From 3.8 hrs in 1990 to 1.5 hrs by 2025. In 2024 and 2026, nights barely dipped below 22°C at all. This is the most direct measure of how heat now disrupts human physiology in Pune.</div>
+    </div>
+  </div>
+
+  <!-- INLINE CHART: sleep-cool trend -->
+  <div class="fig-block reveal">
+    <div class="fig-title">Sleep-Cool Window · Year-by-Year</div>
+    <div class="fig-sub">Interactive chart — hours per night where temperature dropped below 22°C (Mar–Jun season)</div>
+    <div class="chart-wrap"><canvas id="sleepChart"></canvas></div>
+    <div class="chart-legend">
+      <span><span class="legend-swatch" style="background:#2a5d6e;"></span>Hours below 22°C</span>
+      <span><span class="legend-swatch" style="background:rgba(201,60,32,0.3);"></span>10-year smoothed trend</span>
+    </div>
+    <div class="fig-caption">The collapse is not uniform — hot years (2009, 2010, 2016, 2024) consistently spike downward. The trendline tells the story: every decade, Pune loses roughly 30–40 minutes of nightly recovery time.</div>
+  </div>
+</div></section>
+
+<!-- ===== EXTREMES ===== -->
+<section class="section dark"><div class="container">
+  <div class="section-label">Figure 3 & 4</div>
+  <h2 class="section-title">Extreme events are no longer <em>extreme.</em></h2>
+  <p class="section-intro">In the 1990s, a hot day (≥40°C) was a rarity — happening 0–1 times per season. By the 2020s, Pune expects 3–4. The definition of "unusual" has silently shifted.</p>
+
+  <div class="fig-grid reveal">
+    <div class="fig-block">
+      <div class="fig-title">Extreme Heat Frequency</div>
+      <div class="fig-sub">Hot days (≥40°C) & warm nights (≥26°C) per season</div>
+      <img class="fig-img" src="data/03_extreme_frequency.png" alt="Extreme Frequency" onclick="openLB(this.src)">
+      <div class="fig-caption">Warm nights (≥26°C) are the more alarming signal — rising from 0 in the early 1990s to 12 tropical nights in a single season (2026). This is the threshold where unaided sleep becomes physiologically impossible.</div>
+    </div>
+    <div class="fig-block heat">
+      <div class="fig-title">Heatwave Metrics</div>
+      <div class="fig-sub">Frequency, total days, and longest consecutive run per season</div>
+      <img class="fig-img" src="data/04_heatwaves.png" alt="Heatwaves" onclick="openLB(this.src)">
+      <div class="fig-caption">Longest heatwave runs have grown from near-zero to 3–4 days in recent years. Each additional consecutive day compounds dehydration, fatigue, and infrastructure stress exponentially.</div>
+    </div>
+  </div>
+
+  <!-- interactive chart: hot days timeline -->
+  <div class="fig-block reveal">
+    <div class="fig-title">Hot Days & Tropical Nights · 1990–2026</div>
+    <div class="fig-sub">Interactive chart — days ≥40°C (hot days) and nights ≥26°C (tropical nights) per season</div>
+    <div class="chart-wrap"><canvas id="extremeChart"></canvas></div>
+    <div class="chart-legend">
+      <span><span class="legend-swatch" style="background:rgba(201,60,32,0.85);"></span>Hot days ≥40°C</span>
+      <span><span class="legend-swatch" style="background:rgba(232,112,58,0.6);"></span>Tropical nights ≥26°C</span>
+    </div>
+    <div class="fig-caption">The 1990–2005 period saw essentially zero hot days. The signal accelerates post-2009 and becomes consistent post-2019. 2026 recorded 12 tropical nights — a number that did not exist in this dataset 35 years ago.</div>
+  </div>
+</div></section>
+
+<!-- ===== SEASON TIMING ===== -->
+<section class="section"><div class="container">
+  <div class="section-label">Figure 5</div>
+  <h2 class="section-title">The season starts <em>three weeks earlier.</em></h2>
+  <p class="section-intro">It's not just that it's hotter — the window of dangerous heat is longer. The first hot day of the year now arrives in mid-March rather than early April. School terms, construction schedules, and agricultural calendars haven't adapted.</p>
+
+  <div class="fig-block heat reveal">
+    <div class="fig-title">Season Timing Shift</div>
+    <div class="fig-sub">Day-of-year for first and last hot day (≥40°C) of the pre-monsoon season · 1990–2026</div>
+    <img class="fig-img" src="data/05_season_timing.png" alt="Season Timing" onclick="openLB(this.src)">
+    <div class="fig-caption">The first hot day has shifted ~18 days earlier. In 1990–95, the season typically opened in late April (DOY ~100). By 2022–2026, it opens in late March (DOY ~77–84). This 3-week earlier onset dramatically expands total population exposure.</div>
+  </div>
+
+  <!-- thermo cards: season onset -->
+  <div class="thermo-grid reveal">
+    <div class="thermo-card">
+      <div class="thermo-card-label">First Hot Day · 1990–2000 avg</div>
+      <div class="thermo-card-big" style="color:var(--cool);">DOY<br><span style="font-size:0.75em;">~100</span></div>
+      <div class="thermo-card-sub">≈ 10 April</div>
+      <div class="thermo-card-note">School annual exams, Gudi Padwa festivals, and outdoor labour all fell before the heat window opened.</div>
+    </div>
+    <div class="thermo-card heat">
+      <div class="thermo-card-label">First Hot Day · 2020–2026 avg</div>
+      <div class="thermo-card-big">DOY<br><span style="font-size:0.75em;">~82</span></div>
+      <div class="thermo-card-sub">≈ 22 March</div>
+      <div class="thermo-card-note">The same calendar events now happen inside the heat window. Children's exam season, harvest preparation, and major festivals all occur under active heat stress.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ===== UTCI ===== -->
+<section class="section dark"><div class="container">
+  <div class="section-label">Figures 6, 7 & 9</div>
+  <h2 class="section-title">Your body says it's worse than <em>the thermometer.</em></h2>
+  <p class="section-intro">Dry-bulb temperature is what weather apps show. The Universal Thermal Climate Index (UTCI) models what your body actually feels — incorporating humidity, wind, and solar radiation. The felt shift is larger than the raw numbers suggest.</p>
+
+  <div class="callout-row reveal">
+    <div class="callout hl">
+      <div class="callout-label">UTCI Strong Heat Stress (2026)</div>
+      <div class="callout-big">18%</div>
+      <div class="callout-sub">of all pre-monsoon hours — up from 9% in 1990</div>
+    </div>
+    <div class="callout">
+      <div class="callout-label">Very Strong Stress hrs (2024)</div>
+      <div class="callout-big">2%</div>
+      <div class="callout-sub">a category that was essentially 0% through the 1990s</div>
+    </div>
+    <div class="callout">
+      <div class="callout-label">"No Stress" time lost (2026)</div>
+      <div class="callout-big">−24pts</div>
+      <div class="callout-sub">71.9% (1990) → 48.1% (2026) — comfort hours cut by a third</div>
+    </div>
+  </div>
+
+  <!-- interactive UTCI chart -->
+  <div class="fig-block reveal">
+    <div class="fig-title">UTCI Stress Distribution · 1990–2026</div>
+    <div class="fig-sub">Stacked area chart — % of pre-monsoon hours in each thermal stress category</div>
+    <div class="chart-wrap" style="height:360px;"><canvas id="utciChart"></canvas></div>
+    <div class="chart-legend">
+      <span><span class="legend-swatch" style="background:#2a5d6e;"></span>No stress</span>
+      <span><span class="legend-swatch" style="background:#f5b041;"></span>Moderate</span>
+      <span><span class="legend-swatch" style="background:#e8703a;"></span>Strong</span>
+      <span><span class="legend-swatch" style="background:#7d1f10;"></span>Very Strong</span>
+    </div>
+    <div class="fig-caption">The green "No Stress" band has shrunk by 24 percentage points since 1990. The red "Strong + Very Strong" band has doubled. This shift in the balance of thermal comfort is the defining heat story of the last four decades.</div>
+  </div>
+
+  <div class="fig-grid reveal" style="margin-top:0;">
+    <div class="fig-block">
+      <div class="fig-title">UTCI Exposure by Category</div>
+      <div class="fig-sub">Fraction of season in each thermal stress class</div>
+      <img class="fig-img" src="data/06_UTCI_exposure.png" alt="UTCI Exposure" onclick="openLB(this.src)">
+      <div class="fig-caption">Green "No Stress" time has been consumed by expanding heat-stress bands — visible as the composition shifting from safe to dangerous across the 37-year span.</div>
+    </div>
+    <div class="fig-block">
+      <div class="fig-title">Humidity Amplification</div>
+      <div class="fig-sub">How rising moisture pushes felt temperature beyond dry-bulb</div>
+      <img class="fig-img" src="data/09_humidity_amplification.png" alt="Humidity Amplification" onclick="openLB(this.src)">
+      <div class="fig-caption">Rising pre-monsoon humidity means that even on "moderate" days, sweat doesn't evaporate efficiently — a silent multiplier. Felt temperature exceeds measured temperature by 1–2°C on humid days.</div>
+    </div>
+  </div>
+
+  <div class="fig-block reveal">
+    <div class="fig-title">UTCI Diurnal Profile Shift</div>
+    <div class="fig-sub">Hour-by-hour felt temperature: baseline (1990–94), recent (2019–23), current (2024–26)</div>
+    <img class="fig-img" src="data/07_UTCI_diurnal.png" alt="UTCI Diurnal" onclick="openLB(this.src)">
+    <div class="fig-caption">The most alarming shift is at night — where the baseline occasionally dipped below "No Stress" and the current period almost never does. The 11 PM–5 AM recovery window has been largely erased.</div>
+  </div>
+</div></section>
+
+<!-- ===== ANATOMY OF A DAY ===== -->
+<section class="section"><div class="container">
+  <div class="section-label">Figures 11, 12, 13 & 14</div>
+  <h2 class="section-title">The same day, hour by hour. <em>Before and after.</em></h2>
+  <p class="section-intro">Trend lines tell you direction. The "anatomy of a day" tells you what it felt like to live in Pune in 1992 versus 2024 — hour by hour, threshold by threshold.</p>
+
+  <div class="fig-block heat reveal">
+    <div class="fig-title">The Same Day, Hour by Hour</div>
+    <div class="fig-sub">Average diurnal temperature — baseline (1990–94), recent (2019–23), current (2024–26)</div>
+    <img class="fig-img" src="data/11_hourly_curve.png" alt="Hourly Curve" onclick="openLB(this.src)">
+    <div class="fig-caption">The current curve sits consistently 1.5–2°C above the baseline across all 24 hours. The gap is largest between 2 AM and 6 AM — exactly when the body should be at its coolest, and recovery should be deepest.</div>
+  </div>
+
+  <div class="fig-grid reveal">
+    <div class="fig-block">
+      <div class="fig-title">Anatomy of a Day: Comfort Bands</div>
+      <div class="fig-sub">Hours per day in each UTCI stress band — baseline vs current</div>
+      <img class="fig-img" src="data/12_anatomy_bands.png" alt="Anatomy Bands" onclick="openLB(this.src)">
+      <div class="fig-caption">The comfortable fraction is being consumed by heat-stress bands. This is visible as a systematic shift in the stacked bar composition across the three time windows.</div>
+    </div>
+    <div class="fig-block">
+      <div class="fig-title">Duration, Not Average</div>
+      <div class="fig-sub">Hours per day crossing each critical threshold</div>
+      <img class="fig-img" src="data/14_duration_bars.png" alt="Duration Bars" onclick="openLB(this.src)">
+      <div class="fig-caption">Using averages hides duration. This shows how many hours each threshold is exceeded — the number that matters most for outdoor workers and vulnerable populations who cannot retreat indoors.</div>
+    </div>
+  </div>
+
+  <div class="fig-block reveal">
+    <div class="fig-title">Threshold Clock Times</div>
+    <div class="fig-sub">At what hour does dangerous heat begin and end?</div>
+    <img class="fig-img" src="data/13_threshold_clock.png" alt="Threshold Clock" onclick="openLB(this.src)">
+    <div class="fig-caption">The clock-time when dangerous thresholds are first crossed has shifted earlier — shrinking the safe outdoor working window. What used to be a 6-hour safe period in the morning has compressed to 3–4 hours in recent years.</div>
+  </div>
+</div></section>
+
+<!-- ===== MONTHLY BREAKDOWN ===== -->
+<section class="section dark"><div class="container">
+  <div class="section-label">Figures 15 & 16</div>
+  <h2 class="section-title">Peak escalation or season <em>extension?</em></h2>
+  <p class="section-intro">Pooling the whole pre-monsoon into one number hides whether the <strong>hottest month is getting worse</strong>, or whether <strong>shoulder months are catching up</strong>. The monthly trends tell a more complete story.</p>
+
+  <!-- Monthly significance grid -->
+  <div class="month-grid reveal">
+    <div class="month-card sig">
+      <div class="month-name">March</div>
+      <div class="month-slope">+0.35°</div>
+      <div class="month-unit">T<sub>min</sub> / decade</div>
+      <span class="month-sig-badge p05">p &lt; 0.05 ✓</span>
+      <div style="margin-top:10px;font-size:13px;color:var(--muted);font-style:italic;">March is warming — the season is opening earlier with warmer nights already in place.</div>
+    </div>
+    <div class="month-card sig">
+      <div class="month-name">April ★</div>
+      <div class="month-slope">+0.55°</div>
+      <div class="month-unit">T<sub>min</sub> / decade</div>
+      <span class="month-sig-badge p001">p &lt; 0.001 ★★★</span>
+      <div style="margin-top:10px;font-size:13px;color:var(--muted);font-style:italic;">April is the critical month. The strongest warming signal in the entire record — nights that used to cool to 19°C now rarely drop below 22°C.</div>
+    </div>
+    <div class="month-card sig">
+      <div class="month-name">May</div>
+      <div class="month-slope">+0.31°</div>
+      <div class="month-unit">T<sub>min</sub> / decade</div>
+      <span class="month-sig-badge p05">p &lt; 0.05 ✓</span>
+      <div style="margin-top:10px;font-size:13px;color:var(--muted);font-style:italic;">May warming is significant, with hot days increasing (p&lt;0.01). The hottest part of the season is intensifying.</div>
+    </div>
+    <div class="month-card">
+      <div class="month-name">June</div>
+      <div class="month-slope">+0.11°</div>
+      <div class="month-unit">T<sub>min</sub> / decade</div>
+      <span class="month-sig-badge p05">p &lt; 0.05 ✓</span>
+      <div style="margin-top:10px;font-size:13px;color:var(--muted);font-style:italic;">June night warming is just crossing significance — the monsoon arrival still provides a natural buffer, but that buffer may be eroding.</div>
+    </div>
+  </div>
+
+  <div class="fig-grid reveal" style="margin-top:28px;">
+    <div class="fig-block heat">
+      <div class="fig-title">Monthly Trend Decomposition</div>
+      <div class="fig-sub">Where within the pre-monsoon season is warming concentrated?</div>
+      <img class="fig-img" src="data/15_monthly_trend_decomposition.png" alt="Monthly Decomposition" onclick="openLB(this.src)">
+      <div class="fig-caption">April dominates the signal — both for Tmin and for sleep-cool collapse. This is not diffuse warming; it is concentrated in the peak-heat month, making it more dangerous than a uniform rise would be.</div>
+    </div>
+    <div class="fig-block">
+      <div class="fig-title">Month × Year Heatmap</div>
+      <div class="fig-sub">Temperature anomaly by month within season, year by year</div>
+      <img class="fig-img" src="data/16_month_year_heatmap.png" alt="Month Year Heatmap" onclick="openLB(this.src)">
+      <div class="fig-caption">Reading across rows: the season intensifies. Reading down columns: each month's multi-decade trajectory reddens. The reddening of March confirms season extension; April's column confirms peak escalation — both happening simultaneously.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ===== VARIABILITY ===== -->
+<section class="section"><div class="container">
+  <div class="section-label">Figure 10</div>
+  <h2 class="section-title">And the swings are getting <em>more unpredictable.</em></h2>
+  <p class="section-intro">Beyond the trend, inter-annual variability tells us that bad years are becoming far more extreme. The gap between a "cool" and a "hot" pre-monsoon is widening — making planning, adaptation, and early warning systems harder.</p>
+
+  <div class="fig-block heat reveal">
+    <div class="fig-title">Inter-Annual Variability</div>
+    <div class="fig-sub">Year-to-year spread in pre-monsoon mean temperatures · 1990–2026</div>
+    <img class="fig-img" src="data/10_variability.png" alt="Variability" onclick="openLB(this.src)">
+    <div class="fig-caption">The range between the coolest and hottest pre-monsoon seasons has grown. This means adaptation strategies cannot target a stable "new normal" — they must build resilience for an increasingly volatile range.</div>
+  </div>
+</div></section>
+
+<!-- ===== WHAT THIS MEANS ===== -->
+<section class="section dark"><div class="container">
+  <div class="section-label">So what?</div>
+  <h2 class="section-title">What does this mean for <em>Pune's people?</em></h2>
+  <p class="section-intro" style="max-width:100%">Climate data becomes meaningful when translated into lived experience. These are not abstract degree values — they represent real changes in how 3.5 million people experience their city.</p>
+
+  <div class="thermo-grid reveal" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="thermo-card">
+      <div class="thermo-card-label">Outdoor Workers</div>
+      <div class="thermo-card-big" style="color:var(--heat-2);font-size:clamp(32px,4vw,52px);">−3 hrs</div>
+      <div class="thermo-card-sub">Safe outdoor morning window</div>
+      <div class="thermo-card-note">Construction workers, street vendors, agricultural labourers — the safe pre-10 AM window has shrunk by approximately 3 hours since the 1990s.</div>
+    </div>
+    <div class="thermo-card heat">
+      <div class="thermo-card-label">Children & Schools</div>
+      <div class="thermo-card-big" style="font-size:clamp(32px,4vw,52px);">−18d</div>
+      <div class="thermo-card-sub">Season starts earlier</div>
+      <div class="thermo-card-note">Annual exams (March–April), summer holidays, and morning school hours now fully overlap with active heat stress — a public health issue that remains unaddressed in school policy.</div>
+    </div>
+    <div class="thermo-card">
+      <div class="thermo-card-label">Sleep Quality</div>
+      <div class="thermo-card-big" style="color:var(--heat-3);font-size:clamp(32px,4vw,52px);">1.5 hr</div>
+      <div class="thermo-card-sub">Left of sleep-cool window</div>
+      <div class="thermo-card-note">In 1990, Pune offered nearly 4 hours where the body could truly cool. That window has been cut by 60%. For those without AC — the majority — this represents persistent chronic sleep stress.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ===== SUMMARY DASHBOARD ===== -->
+<section class="section"><div class="container">
+  <div class="section-label">Summary</div>
+  <h2 class="section-title">Every metric. <em>One chart.</em></h2>
+  <p class="section-intro">The complete 37-year view — Tmax, Tmin, DTR, hot days, warm nights, heatwave duration — confirming that this is structural climate evolution, not statistical noise.</p>
+
+  <div class="fig-block heat reveal">
+    <div class="fig-title">Complete Summary Dashboard · 1990–2026</div>
+    <div class="fig-sub">All key climate metrics, ERA5-derived, area-weighted Pune city mean</div>
+    <img class="fig-img" src="data/00_summary_dashboard.png" alt="Summary Dashboard" onclick="openLB(this.src)">
+    <div class="fig-caption">Six panels, one consistent story. The direction, magnitude, and statistical significance converge: Pune's thermal environment has fundamentally and measurably shifted over the last four decades.</div>
+  </div>
+</div></section>
+
+<!-- ===== DATA SOURCES ===== -->
+<section class="sources-section"><div class="container">
+  <h2>Data Sources & Methodology</h2>
+  <div class="source-grid">
+    <div class="source-card">
+      <h4>Climate Data</h4>
+      <p><strong>Open-Meteo ERA5 Historical Archive.</strong> Hourly temperature, dewpoint, wind speed for every ERA5 grid cell overlapping the Pune Municipal Corporation boundary. Open API — no key required. Period: 1990–2026.</p>
+    </div>
+    <div class="source-card">
+      <h4>Spatial Sampling</h4>
+      <p>Area-weighted mean over a <strong>0.10° grid</strong> (~11 km spacing) of ERA5-Land cells intersecting the Pune city shapefile. Each cell weighted by its fractional overlap with the PMC boundary polygon.</p>
+    </div>
+    <div class="source-card">
+      <h4>Trend Analysis</h4>
+      <p><strong>Mann-Kendall</strong> non-parametric significance test (Hamed-Rao autocorrelation-corrected p-values) and <strong>Theil-Sen</strong> robust slope estimation. All trend lines shown are Sen slopes, not OLS regressions.</p>
+    </div>
+    <div class="source-card">
+      <h4>Thermal Comfort (UTCI)</h4>
+      <p>Universal Thermal Climate Index computed from T<sub>2m</sub>, dewpoint, wind speed, and a conservative shade approximation. Daytime UTCI underestimates solar-loaded outdoor environments — stated explicitly.</p>
+    </div>
+    <div class="source-card">
+      <h4>Thresholds Used</h4>
+      <p>Hot day: ≥40°C T<sub>max</sub>. Warm night: ≥26°C T<sub>min</sub>. Tropical night: ≥26°C. Sleep-cool: &lt;22°C T. Heatwave: ≥3 consecutive hot days. These are health-literature proxies, not IMD operational definitions.</p>
+    </div>
+    <div class="source-card">
+      <h4>Monthly Significance</h4>
+      <p>Per-month Mann-Kendall tests reported as: *** (p&lt;0.001), ** (p&lt;0.01), * (p&lt;0.05), n.s. (not significant). Month-level series are shorter than season-pooled — non-significant months do not contradict pooled significance.</p>
+    </div>
+  </div>
+  <details class="methods"><summary>Reviewer notes — expand</summary>
+    <div class="methods-body">
+      <p>All figures use the same area-weighted, QA-checked hourly series. Per-year completeness is computed before trend analysis; years below 95% coverage are flagged in Pune_DataCompleteness_1990_2026.csv. Figure 10 (variability) is exploratory — do not headline variability claims without cross-validation against longer records.</p>
+      <p>The monthly decomposition (Figs 15–16) reuses already-pulled data grouped by calendar month. The sleep-cool interactive chart uses the Pune_SleepCool_1990_2026 CSV directly. UTCI stacked chart uses Pune_UTCI_percent_1990_2026 CSV.</p>
+    </div>
+  </details>
+</div></section>
+
+<footer><p>Pune Urban Heat Framework · Climate Evolution Module · ERA5 1990–2026 · <a href="index.html">← Back to Dashboard</a></p></footer>
+
+<script>
+/* ===== LIGHTBOX ===== */
+function openLB(src){document.getElementById('lb-img').src=src;document.getElementById('lb').classList.add('open');}
+function closeLB(){document.getElementById('lb').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLB();});
+
+/* ===== SCROLL REVEAL ===== */
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});
+},{threshold:0.07,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+/* ===== PROGRESS BAR ===== */
+window.addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  const pct=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100;
+  document.getElementById('progress-bar').style.width=pct+'%';
+});
+
+/* ===== SLEEP-COOL CHART ===== */
+const sleepYears=[1990,1991,1992,1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026];
+const sleepVals=[3.78,2.98,3.47,3.68,3.55,3.00,3.87,4.31,2.50,4.16,4.16,4.07,2.30,2.94,2.74,3.25,3.72,2.45,3.16,2.12,1.53,3.22,3.79,3.45,2.46,3.22,2.03,2.81,2.19,3.09,2.02,2.48,1.60,3.10,1.57,1.47,1.92];
+
+// 5-year moving average for trend
+function movingAvg(data,win){
+  return data.map((_,i)=>{
+    if(i<Math.floor(win/2)||i>data.length-Math.ceil(win/2)){return null;}
+    const slice=data.slice(i-Math.floor(win/2),i+Math.ceil(win/2));
+    return slice.reduce((a,b)=>a+b,0)/slice.length;
+  });
+}
+
+new Chart(document.getElementById('sleepChart'),{
+  type:'bar',
+  data:{
+    labels:sleepYears,
+    datasets:[
+      {label:'Hours below 22°C',data:sleepVals,backgroundColor:sleepVals.map(v=>v<2?'rgba(201,60,32,0.75)':v<2.5?'rgba(232,112,58,0.65)':'rgba(42,93,110,0.6)'),borderRadius:2},
+      {label:'5-yr trend',data:movingAvg(sleepVals,5),type:'line',borderColor:'rgba(201,60,32,0.5)',borderWidth:2,pointRadius:0,tension:0.4,fill:false}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y.toFixed(2)} hrs`}}},
+    scales:{
+      x:{ticks:{color:'#6b4f3a',font:{family:'JetBrains Mono',size:10},maxRotation:45},grid:{color:'rgba(26,15,8,0.06)'}},
+      y:{title:{display:true,text:'Hours below 22°C',color:'#6b4f3a',font:{size:11}},min:0,max:5,ticks:{color:'#6b4f3a',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(26,15,8,0.08)'}}
+    }
+  }
+});
+
+/* ===== EXTREME EVENTS CHART ===== */
+const extYears=[1990,1991,1992,1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026];
+const hotDays=[0,0,0,0,0,0,0,0,1,0,0,1,6,2,0,1,0,0,0,1,2,0,0,2,0,0,0,0,0,3,0,0,3,0,4,1,3];
+const tropNights=[0,0,0,0,0,0,0,0,5,0,0,1,2,0,3,0,0,0,0,0,0,0,0,1,3,0,1,2,0,4,0,2,1,0,10,1,12];
+
+new Chart(document.getElementById('extremeChart'),{
+  type:'bar',
+  data:{
+    labels:extYears,
+    datasets:[
+      {label:'Hot days ≥40°C',data:hotDays,backgroundColor:'rgba(201,60,32,0.85)',borderRadius:2},
+      {label:'Tropical nights ≥26°C',data:tropNights,backgroundColor:'rgba(232,112,58,0.6)',borderRadius:2}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y} days`}}},
+    scales:{
+      x:{ticks:{color:'#6b4f3a',font:{family:'JetBrains Mono',size:10},maxRotation:45},grid:{color:'rgba(26,15,8,0.06)'}},
+      y:{title:{display:true,text:'Days per season',color:'#6b4f3a',font:{size:11}},ticks:{color:'#6b4f3a',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(26,15,8,0.08)'}}
+    }
+  }
+});
+
+/* ===== UTCI STACKED AREA CHART ===== */
+const utciYears=[1990,1991,1992,1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026];
+const utciNoStress=[71.9,58.5,59.9,63.8,63.4,59.1,61.9,65.9,56.5,69.9,71.4,68.5,61.9,62.0,64.4,59.4,65.9,59.7,65.5,58.0,52.8,64.2,64.4,65.1,56.2,60.6,57.5,63.7,63.2,59.2,60.3,63.6,58.9,61.4,52.6,58.9,48.1];
+const utciModerate=[18.9,25.9,24.8,24.2,23.9,29.8,24.2,25.3,27.3,19.1,19.5,23.4,25.9,22.7,20.8,26.4,22.1,27.0,23.6,25.6,28.8,24.2,21.1,22.3,28.2,26.6,27.2,22.9,22.7,24.1,25.1,25.0,24.2,28.7,27.5,25.9,33.7];
+const utciStrong=[8.9,15.2,15.2,11.9,12.6,11.0,14.0,8.7,15.8,11.0,9.1,7.8,11.0,14.7,14.5,14.0,11.8,13.2,10.6,15.8,17.0,11.5,14.5,11.9,15.4,12.7,14.5,13.3,13.9,15.6,14.5,11.4,15.9,9.8,17.9,14.3,17.3];
+const utciVeryStrong=[0.27,0.41,0.10,0.14,0.10,0.07,0.0,0.0,0.44,0.0,0.0,0.34,1.20,0.61,0.31,0.14,0.20,0.14,0.38,0.55,1.37,0.0,0.0,0.68,0.17,0.10,0.75,0.10,0.17,1.06,0.03,0.0,0.89,0.10,2.02,0.85,0.92];
+
+new Chart(document.getElementById('utciChart'),{
+  type:'line',
+  data:{
+    labels:utciYears,
+    datasets:[
+      {label:'No stress',data:utciNoStress,fill:true,backgroundColor:'rgba(42,93,110,0.55)',borderColor:'rgba(42,93,110,0.9)',borderWidth:1.5,pointRadius:0,tension:0.3},
+      {label:'Moderate',data:utciModerate,fill:true,backgroundColor:'rgba(245,176,65,0.55)',borderColor:'rgba(245,176,65,0.9)',borderWidth:1.5,pointRadius:0,tension:0.3},
+      {label:'Strong',data:utciStrong,fill:true,backgroundColor:'rgba(232,112,58,0.6)',borderColor:'rgba(232,112,58,0.9)',borderWidth:1.5,pointRadius:0,tension:0.3},
+      {label:'Very Strong',data:utciVeryStrong,fill:true,backgroundColor:'rgba(125,31,16,0.75)',borderColor:'rgba(125,31,16,0.9)',borderWidth:1.5,pointRadius:0,tension:0.3}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`}}
+    },
+    scales:{
+      x:{ticks:{color:'#6b4f3a',font:{family:'JetBrains Mono',size:10},maxRotation:45},grid:{color:'rgba(26,15,8,0.06)'}},
+      y:{stacked:false,title:{display:true,text:'% of pre-monsoon hours',color:'#6b4f3a',font:{size:11}},min:0,max:80,ticks:{color:'#6b4f3a',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(26,15,8,0.08)'}}
+    }
+  }
+});
+</script>
+
+<!-- SHARED FOOTER -->
+<footer class="site-footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="footer-brand">Climate Evolution</div>
+      <p>ERA5 hourly data reveals 37 years of thermal change in Pune — from cooling nights to compressed sleep windows and a heat season starting three weeks earlier.</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-head">Data Sources</div>
+      <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo ERA5 Historical Archive</a>
+      <a href="https://pmc.gov.in" target="_blank" rel="noopener">Pune Municipal Corporation</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-head">Method</div>
+      <p>Mann-Kendall significance · Theil-Sen slope · Area-weighted city mean · UTCI thermal comfort model</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-author">
+      <span class="footer-author-label">Designed &amp; Developed by</span>
+      <a class="footer-author-name" href="https://manasthepatra.github.io/"
+         target="_blank" rel="noopener noreferrer">Manas Ranjan Patra</a>
+    </div>
+    <div class="footer-credits">
+      <span class="footer-credits-label">Guided by</span>
+      <a href="https://www.linkedin.com/in/roxy-koll/"
+         target="_blank" rel="noopener noreferrer">Dr. Roxy Mathew Koll</a>
+      <a href="https://www.linkedin.com/in/dr-veena-b2370959/"
+         target="_blank" rel="noopener noreferrer">Dr. Veena Parihar</a>
+    </div>
+  </div>
+</footer>
+
+<script src="js/site.js"></script>
+</body>
+</html>

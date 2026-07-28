@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ward Heat Risk · Pune Urban Heat Framework</title>
+<meta name="description" content="Interactive ward-level heat risk explorer — combining thermal exposure, population vulnerability, and social indicators across Pune's wards.">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,400&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Design System -->
+<link rel="stylesheet" href="css/design-system.css">
+<link rel="stylesheet" href="css/ward.css">
+
+<style>
+/* Leaflet UI cleanup */
+.leaflet-control-zoom { display: none !important; }
+.leaflet-attribution-flag { display: none !important; }
+.leaflet-control-attribution {
+  background: rgba(245,237,224,0.7) !important;
+  font-family: var(--font-mono) !important; font-size: 9px !important;
+}
+/*
+  GPU COMPOSITING FIX — choropleth fill visibility
+  ─────────────────────────────────────────────────
+  Previously: .leaflet-tile-pane img had `filter: saturate(0.25)...`
+  A CSS `filter` on any element promotes it to a GPU compositing layer.
+  Chrome composites GPU layers AFTER CPU-painted elements regardless of
+  z-index. This caused tile <img> GPU layers to composite ON TOP of the
+  SVG overlay-pane (which was CPU-painted), hiding the choropleth fills
+  even though overlay-pane has z-index 400 vs tile-pane's 200.
+  During Leaflet zoom animation, map-pane gets transform: translate3d(...)
+  which promotes the ENTIRE map-pane to one GPU layer — at that moment
+  all child z-indexes resolve correctly → fills briefly visible → zoom ends
+  → map-pane loses transform → compositing order breaks → fills disappear.
+
+  FIX 1: No filter on tile images → no rogue GPU layers on tiles.
+  FIX 2: will-change: transform on overlay-pane → GPU-promotes it
+          permanently so it is always composited above the tile-pane.
+*/
+.leaflet-overlay-pane {
+  will-change: transform;
+}
+</style>
+</head>
+
+<body class="ward-page">
+
+<!-- PROGRESS -->
+<div id="site-progress"></div>
+
+<!-- LIGHTBOX -->
+<div id="site-lightbox">
+  <button id="site-lightbox-close" aria-label="Close">&#x2715;</button>
+  <img id="site-lightbox-img" src="" alt="">
+</div>
+
+<!-- GLOBAL NAV -->
+<nav class="site-nav" role="navigation" aria-label="Main navigation">
+  <a class="nav-brand" href="index.html">
+    <div class="nav-brand-badge" aria-hidden="true">PMC</div>
+    <span class="nav-brand-text">Pune Urban Heat Framework</span>
+  </a>
+  <ul class="nav-links" role="list">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="ward_heat_risk.html" class="active" aria-current="page">Ward Heat Risk</a></li>
+    <li><a href="climate_evolution.html">Climate Evolution</a></li>
+    <li><a href="thermal_evolution.html">Thermal Evolution</a></li>
+  </ul>
+  <button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="nav-mobile-menu" id="nav-mobile-menu" role="dialog" aria-hidden="true">
+  <button class="nav-mobile-close" id="nav-mobile-close" aria-label="Close menu">&#x2715;</button>
+  <a href="index.html">Home</a>
+  <a href="ward_heat_risk.html" class="active">Ward Heat Risk</a>
+  <a href="climate_evolution.html">Climate Evolution</a>
+  <a href="thermal_evolution.html">Thermal Evolution</a>
+</div>
+
+<!-- TOP BAR -->
+<div class="ward-topbar" role="toolbar" aria-label="Map controls">
+  <span class="ward-topbar-title">Ward Heat Risk Explorer</span>
+  <div class="ward-topbar-sep" aria-hidden="true"></div>
+  <span class="ward-topbar-hint hide-mobile">Hover to preview · Click ward to explore</span>
+  <div class="ward-topbar-right">
+    <label for="filter-metric" class="visually-hidden">Colour map by</label>
+    <select class="ward-filter-select" id="filter-metric" aria-label="Colour map by metric">
+      <option value="HeatRisk">Heat Risk Score</option>
+      <option value="H">Hazard (H)</option>
+      <option value="E">Exposure (E)</option>
+      <option value="V">Vulnerability (V)</option>
+      <option value="ward_LST">Avg LST (°C)</option>
+      <option value="illit_rate">Illiteracy Rate</option>
+    </select>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="ward-layout" role="main">
+
+  <!-- MAP PANEL -->
+  <div class="ward-map-panel">
+    <div id="ward-map" aria-label="Interactive ward heat risk map of Pune"></div>
+
+    <!-- MAP CONTROLS -->
+    <div class="map-controls" role="group" aria-label="Map zoom controls">
+      <button class="map-btn" id="btn-zoom-in"  title="Zoom in"  aria-label="Zoom in">+</button>
+      <button class="map-btn" id="btn-zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
+      <button class="map-btn" id="btn-home"     title="Reset view" aria-label="Reset map view">⌂</button>
+    </div><!-- /map-controls -->
+  </div><!-- /ward-map-panel -->
+
+
+  <!-- INFO PANEL -->
+  <aside class="ward-info-panel" role="complementary" aria-label="Ward information panel" id="ward-info-panel">
+
+    <!-- EMPTY STATE -->
+    <div class="panel-empty" id="panel-empty" aria-live="polite">
+      <div class="panel-empty-icon" aria-hidden="true">&#9654;</div>
+      <h3>Select a ward</h3>
+      <p>Click any ward polygon on the map to explore its heat risk, vulnerability metrics, and spatial indicators in detail.</p>
+      <p style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-top:8px;">
+        16 wards · H × E × V framework
+      </p>
+    </div>
+
+    <!-- FILLED STATE -->
+    <div id="panel-filled" style="display:none;">
+      <div class="panel-header">
+        <div class="panel-ward-meta" id="panel-meta">Ward · Pune</div>
+        <div class="panel-ward-name" id="panel-name">—</div>
+        <div id="panel-badge"></div>
+      </div>
+
+      <div class="panel-metrics" id="panel-metrics">
+        <!-- injected by JS -->
+      </div>
+
+      <div class="panel-hei" id="panel-hei-section">
+        <div class="hei-title">Risk Decomposition (H × E × V)</div>
+        <div class="hei-bar-row" id="panel-hei-bars"></div>
+      </div>
+
+      <div class="panel-note" id="panel-note" style="display:none;"></div>
+
+      <!-- mini chart -->
+      <div style="padding: var(--space-lg) var(--space-xl); border-bottom: 1px solid var(--line);">
+        <div class="hei-title" style="margin-bottom:12px;">Indicator Radar</div>
+        <div style="position:relative;height:220px;">
+          <canvas id="ward-radar-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- RANKING -->
+    <div class="panel-ranking" id="panel-ranking">
+      <div class="ranking-title">All Wards by Heat Risk Rank</div>
+      <ul class="ranking-list" id="ranking-list" role="list"></ul>
+    </div>
+  </aside>
+
+</div><!-- /ward-layout -->
+
+<!-- JS -->
+<script src="js/site.js"></script>
+<script>
+/* ============================================================
+   WARD HEAT RISK DATA (from CSV)
+   Cantonment / Mundhwa / Ghorpari excluded from ranking
+   ============================================================ */
+const WARD_DATA = [
+  { Name:"Aundh",            n_wards:9,  population:181124, ward_LST:42.79, ward_NDVI:0.357, _popdens:4525,   child_share:0.108, marg_share:0.173, illit_rate:0.194, crowding:4.02, low_green:0.245, H:0.204, E:0.0,   V:0.427, HeatRisk:0.211, HeatRisk_rank:14 },
+  { Name:"Ghole Road",       n_wards:11, population:171678, ward_LST:41.84, ward_NDVI:0.375, _popdens:11832,  child_share:0.086, marg_share:0.138, illit_rate:0.187, crowding:4.40, low_green:0.135, H:0.0,   E:0.112, V:0.359, HeatRisk:0.157, HeatRisk_rank:15 },
+  { Name:"Kothrud Karveroad",n_wards:9,  population:209331, ward_LST:43.80, ward_NDVI:0.314, _popdens:12786,  child_share:0.097, marg_share:0.075, illit_rate:0.185, crowding:3.84, low_green:0.504, H:0.426, E:0.128, V:0.276, HeatRisk:0.277, HeatRisk_rank:10 },
+  { Name:"Warje Karvenagar", n_wards:10, population:233399, ward_LST:43.11, ward_NDVI:0.317, _popdens:15908,  child_share:0.103, marg_share:0.087, illit_rate:0.191, crowding:3.96, low_green:0.484, H:0.274, E:0.183, V:0.340, HeatRisk:0.265, HeatRisk_rank:11 },
+  { Name:"Dhole Patil Rd",   n_wards:9,  population:155413, ward_LST:41.92, ward_NDVI:0.344, _popdens:8603,   child_share:0.101, marg_share:0.224, illit_rate:0.215, crowding:4.41, low_green:0.320, H:0.011, E:0.055, V:0.610, HeatRisk:0.225, HeatRisk_rank:12 },
+  { Name:"Yerawda Sangamwadi",n_wards:12,population:261957, ward_LST:45.81, ward_NDVI:0.282, _popdens:7851,   child_share:0.114, marg_share:0.233, illit_rate:0.223, crowding:4.48, low_green:0.691, H:0.869, E:0.042, V:0.768, HeatRisk:0.560, HeatRisk_rank:2  },
+  { Name:"Nagar Road",       n_wards:9,  population:239564, ward_LST:43.61, ward_NDVI:0.282, _popdens:9328,   child_share:0.115, marg_share:0.139, illit_rate:0.197, crowding:4.06, low_green:0.693, H:0.385, E:0.068, V:0.516, HeatRisk:0.323, HeatRisk_rank:8  },
+  { Name:"KasbaVishrambaugwada",n_wards:13,population:178484,ward_LST:42.54,ward_NDVI:0.277,_popdens:45599,  child_share:0.073, marg_share:0.045, illit_rate:0.134, crowding:4.14, low_green:0.725, H:0.149, E:0.703, V:0.203, HeatRisk:0.352, HeatRisk_rank:5  },
+  { Name:"Tilak Road",       n_wards:10, population:242290, ward_LST:42.09, ward_NDVI:0.321, _popdens:14920,  child_share:0.111, marg_share:0.133, illit_rate:0.204, crowding:4.01, low_green:0.461, H:0.049, E:0.166, V:0.458, HeatRisk:0.224, HeatRisk_rank:13 },
+  { Name:"Sahakarnagar",     n_wards:11, population:205441, ward_LST:42.02, ward_NDVI:0.358, _popdens:33629,  child_share:0.097, marg_share:0.202, illit_rate:0.200, crowding:4.43, low_green:0.236, H:0.033, E:0.493, V:0.524, HeatRisk:0.350, HeatRisk_rank:6  },
+  { Name:"Bibwewadi",        n_wards:4,  population:101129, ward_LST:43.30, ward_NDVI:0.293, _popdens:13208,  child_share:0.103, marg_share:0.114, illit_rate:0.184, crowding:4.09, low_green:0.628, H:0.316, E:0.136, V:0.412, HeatRisk:0.288, HeatRisk_rank:9  },
+  { Name:"Bhavani Peth",     n_wards:12, population:192932, ward_LST:43.28, ward_NDVI:0.265, _popdens:69148,  child_share:0.106, marg_share:0.189, illit_rate:0.210, crowding:4.89, low_green:0.795, H:0.312, E:1.000, V:0.751, HeatRisk:0.687, HeatRisk_rank:1  },
+  { Name:"Hadapsar",         n_wards:9,  population:256793, ward_LST:45.30, ward_NDVI:0.260, _popdens:14545,  child_share:0.126, marg_share:0.169, illit_rate:0.224, crowding:4.11, low_green:0.824, H:0.757, E:0.159, V:0.688, HeatRisk:0.535, HeatRisk_rank:3  },
+  { Name:"Dhankawadi",       n_wards:9,  population:236648, ward_LST:42.78, ward_NDVI:0.262, _popdens:20281,  child_share:0.115, marg_share:0.106, illit_rate:0.186, crowding:4.18, low_green:0.812, H:0.203, E:0.260, V:0.508, HeatRisk:0.323, HeatRisk_rank:7  },
+  { Name:"Kondhwa Wanavdi",  n_wards:7,  population:258275, ward_LST:43.85, ward_NDVI:0.290, _popdens:11556,  child_share:0.136, marg_share:0.136, illit_rate:0.245, crowding:4.36, low_green:0.645, H:0.437, E:0.107, V:0.730, HeatRisk:0.425, HeatRisk_rank:4  },
+];
+
+const EXCLUDED = ["Pune Cantonment","Ghorpari Camp-Cantonment","Mundhwa Industrial Area"];
+const RANKED = [...WARD_DATA].sort((a,b) => a.HeatRisk_rank - b.HeatRisk_rank);
+
+/* ============================================================
+   COLOR SCALES
+   ============================================================ */
+const SCALES = {
+  HeatRisk:   { min:0.15, max:0.69, label:'Heat Risk Score' },
+  H:          { min:0.00, max:1.00, label:'Hazard (H)' },
+  E:          { min:0.00, max:1.00, label:'Exposure (E)' },
+  V:          { min:0.20, max:0.77, label:'Vulnerability (V)' },
+  ward_LST:   { min:41.5, max:46.0, label:'Avg LST (°C)' },
+  illit_rate: { min:0.13, max:0.25, label:'Illiteracy Rate' },
+};
+
+function scaleColor(val, key) {
+  const s = SCALES[key];
+  const t = Math.max(0, Math.min(1, (val - s.min) / (s.max - s.min)));
+  // Cool → warm gradient
+  const stops = [
+    [42,93,110],  // cool
+    [245,176,65], // heat-1
+    [232,112,58], // heat-2
+    [201,60,32],  // heat-3
+    [125,31,16],  // heat-4
+  ];
+  const seg = t * (stops.length - 1);
+  const i   = Math.min(Math.floor(seg), stops.length - 2);
+  const f   = seg - i;
+  const c   = stops[i].map((v,j) => Math.round(v + f * (stops[i+1][j] - v)));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function riskClass(score) {
+  if (score >= 0.5)  return ['Extreme Risk', 'risk-extreme'];
+  if (score >= 0.35) return ['High Risk', 'risk-high'];
+  if (score >= 0.25) return ['Moderate Risk', 'risk-moderate'];
+  return ['Lower Risk', 'risk-low'];
+}
+
+/* ============================================================
+   MAP INIT
+   ============================================================ */
+let map, geojsonLayer, activeMetric = 'HeatRisk';
+let radarChart = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* MAP */
+  map = L.map('ward-map', {
+    center: [18.52, 73.86], zoom: 11,
+    zoomControl: false,
+  });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; CARTO &copy; OSM', maxZoom: 18,
+  }).addTo(map);
+
+  /* CUSTOM ZOOM BUTTONS */
+  document.getElementById('btn-zoom-in').addEventListener('click',  () => map.zoomIn());
+  document.getElementById('btn-zoom-out').addEventListener('click', () => map.zoomOut());
+  document.getElementById('btn-home').addEventListener('click',
+    () => map.setView([18.52, 73.86], 11, { animate: true }));
+
+  /* METRIC FILTER */
+  document.getElementById('filter-metric').addEventListener('change', e => {
+    activeMetric = e.target.value;
+    updateStyles();
+    updateLegend();
+  });
+
+  /* ──────────────────────────────────────────────────────────────
+     LEGEND — created as a Leaflet control so it lives inside
+     .leaflet-control-container (z-index 1000) and is architecturally
+     guaranteed to render above all map panes (overlay-pane z-index 400,
+     tile-pane 200, shadow-pane 500).  A plain HTML div positioned
+     inside .ward-map-panel had z-index 200, which was below the
+     overlay-pane (400) in the same stacking context, causing ward
+     polygon fills to paint over the legend.
+     ────────────────────────────────────────────────────────────── */
+  const legendCtrl = L.control({ position: 'bottomleft' });
+  legendCtrl.onAdd = function () {
+    const div = L.DomUtil.create('div', 'map-legend');
+    div.setAttribute('role', 'complementary');
+    div.setAttribute('aria-label', 'Map legend');
+    div.setAttribute('id', 'map-legend');
+    div.innerHTML = `
+      <div class="legend-title" id="legend-title">Heat Risk Score</div>
+      <div id="legend-items"></div>
+    `;
+    /* Prevent map clicks/scroll from firing through the legend */
+    L.DomEvent.disableClickPropagation(div);
+    L.DomEvent.disableScrollPropagation(div);
+    return div;
+  };
+  legendCtrl.addTo(map);   /* Must be before updateLegend() */
+
+  /* LOAD GEOJSON */
+  fetch('data/pune_admin.geojson')
+    .then(r => r.json())
+    .then(gj => buildMap(gj))
+    .catch(() => console.error('Could not load ward GeoJSON'));
+
+  /* RANKING LIST + LEGEND populate (legend DOM now exists) */
+  buildRanking();
+  updateLegend();
+});
+
+/* ============================================================
+   WARD NAME NORMALIZER
+   Root cause: GeoJSON has "Yerawda - Sangamwadi" (with hyphen),
+   WARD_DATA has "Yerawda Sangamwadi" (no hyphen). Normalise both
+   sides of every lookup so hyphens, extra spaces, and minor
+   punctuation differences never cause a silent mismatch again.
+   ============================================================ */
+function normName(s) {
+  return (s || '').replace(/\s*-\s*/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+function findWardData(name) {
+  const key = normName(name);
+  return WARD_DATA.find(d => normName(d.Name) === key);
+}
+
+/* ============================================================
+   BUILD MAP LAYER
+   ============================================================ */
+function buildMap(gj) {
+  geojsonLayer = L.geoJSON(gj, {
+    style: feature => styleFeature(feature),
+    onEachFeature: (feature, layer) => {
+      const name = feature.properties.Name || feature.properties.name || '';
+      const data = findWardData(name);
+      if (!data) {
+        // Excluded cantonment areas — grey, no interaction
+        layer.setStyle({ fillColor:'#ccc', color:'#aaa', weight:1, fillOpacity:0.4 });
+        return;
+      }
+      layer.on({
+        mouseover: e => {
+          e.target.setStyle({ weight:2.5, color:'var(--ink)', fillOpacity:0.95 });
+          e.target.bringToFront();
+        },
+        mouseout:  e => geojsonLayer.resetStyle(e.target),
+        click:     e => {
+          map.fitBounds(e.target.getBounds(), { padding:[24,24], maxZoom:14, animate:true });
+          showPanel(data);
+        },
+      });
+      layer.bindTooltip(`<span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#1a0f08;">${name}</span>`, {
+        permanent: false, sticky: true, offset:[8,0],
+        className: 'ward-tooltip',
+      });
+    }
+  }).addTo(map);
+  map.fitBounds(geojsonLayer.getBounds(), { padding:[20,20] });
+}
+
+/* ============================================================
+   STYLE FEATURE
+   ============================================================ */
+function styleFeature(feature) {
+  const name = feature.properties.Name || feature.properties.name || '';
+  const data = findWardData(name);
+  if (!data) return { fillColor:'rgba(180,170,158,0.35)', color:'rgba(130,120,110,0.4)', weight:0.8, fillOpacity:0.6, dashArray:'3' };
+  const val = data[activeMetric] ?? 0;
+  return {
+    fillColor: scaleColor(val, activeMetric),
+    color: 'rgba(26,15,8,0.18)',
+    weight: 1,
+    fillOpacity: 0.78,
+  };
+}
+
+function updateStyles() {
+  if (!geojsonLayer) return;
+  geojsonLayer.eachLayer(layer => {
+    if (layer.feature) layer.setStyle(styleFeature(layer.feature));
+  });
+}
+
+/* ============================================================
+   LEGEND
+   ============================================================ */
+function updateLegend() {
+  const s = SCALES[activeMetric];
+  document.getElementById('legend-title').textContent = s.label;
+  const stops = [0, 0.25, 0.5, 0.75, 1.0];
+  const labels = stops.map(t => {
+    const val = s.min + t*(s.max - s.min);
+    return activeMetric === 'illit_rate'
+      ? (val*100).toFixed(0)+'%'
+      : val.toFixed(2);
+  });
+  const items = document.getElementById('legend-items');
+  items.innerHTML = stops.map((t,i) => `
+    <div class="legend-row">
+      <div class="legend-swatch" style="background:${scaleColor(s.min+t*(s.max-s.min),activeMetric)};"></div>
+      <span>${labels[i]}</span>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   PANEL
+   ============================================================ */
+function showPanel(d) {
+  document.getElementById('panel-empty').style.display  = 'none';
+  document.getElementById('panel-filled').style.display = 'block';
+
+  document.getElementById('panel-meta').textContent  = `${d.n_wards} sub-wards · Pop. ${(d.population||0).toLocaleString()}`;
+  document.getElementById('panel-name').textContent  = d.Name;
+
+  const [label, cls] = riskClass(d.HeatRisk || 0);
+  document.getElementById('panel-badge').innerHTML =
+    `<span class="panel-risk-badge ${cls}" role="status">#${d.HeatRisk_rank} · ${label}</span>`;
+
+  // Metrics grid
+  const metrics = [
+    { label:'Avg Summer LST',   value: d.ward_LST?.toFixed(1)+'°C',  cls: d.ward_LST > 44 ? 'heat':'' },
+    { label:'Population',       value: (d.population||0).toLocaleString(), cls:'' },
+    { label:'Pop Density',      value: Math.round(d._popdens||0).toLocaleString(), cls: d._popdens>30000?'heat':'' },
+    { label:'Avg Greenness',    value: (d.ward_NDVI||0).toFixed(3),   cls: d.ward_NDVI < 0.28 ? 'heat': d.ward_NDVI>0.35?'cool':'' },
+    { label:'Illiteracy Rate',  value: ((d.illit_rate||0)*100).toFixed(1)+'%', cls: d.illit_rate>0.2?'heat':'' },
+    { label:'Low-Green Index',  value: (d.low_green||0).toFixed(3),   cls: d.low_green>0.6?'heat':'' },
+  ];
+  document.getElementById('panel-metrics').innerHTML = metrics.map(m =>
+    `<div class="metric-cell">
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-value ${m.cls}">${m.value}</div>
+    </div>`
+  ).join('');
+
+  // HEI bars
+  const hei = [
+    { key:'H', label:'Hazard (Thermal LST)',     val: d.H||0, cls:'h' },
+    { key:'E', label:'Exposure (Population)',    val: d.E||0, cls:'e' },
+    { key:'V', label:'Vulnerability (Social)',   val: d.V||0, cls:'v' },
+  ];
+  document.getElementById('panel-hei-bars').innerHTML = hei.map(h =>
+    `<div class="hei-bar-item">
+      <div class="hei-bar-label">
+        <span>${h.label}</span>
+        <span>${h.val.toFixed(3)}</span>
+      </div>
+      <div class="hei-bar-track">
+        <div class="hei-bar-fill ${h.cls}" style="width:${Math.round(h.val*100)}%"></div>
+      </div>
+    </div>`
+  ).join('');
+
+  // Contextual note
+  const note = document.getElementById('panel-note');
+  if (EXCLUDED.some(n => d.Name.includes(n.split(' ')[0]))) {
+    note.style.display = 'block';
+    note.textContent = 'Note: This area is excluded from composite risk ranking due to data availability constraints.';
+  } else {
+    note.style.display = 'none';
+  }
+
+  // Radar chart
+  buildRadar(d);
+
+  // Highlight ranking item
+  document.querySelectorAll('.ranking-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.name === d.Name);
+  });
+
+  // Scroll panel to top on mobile
+  document.getElementById('ward-info-panel').scrollTop = 0;
+}
+
+/* ============================================================
+   RADAR CHART
+   ============================================================ */
+function buildRadar(d) {
+  const ctx = document.getElementById('ward-radar-chart').getContext('2d');
+  if (radarChart) radarChart.destroy();
+  radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['LST', 'NDVI\n(inv)', 'Pop\nDensity', 'Illiteracy', 'Child\nShare', 'Low\nGreen'],
+      datasets: [{
+        label: d.Name,
+        data: [
+          (d.ward_LST - 41) / 5,                  // normalised 0-1
+          1 - d.ward_NDVI / 0.5,                   // inverted greenness
+          Math.min(d._popdens / 70000, 1),
+          d.illit_rate / 0.25,
+          d.child_share / 0.15,
+          d.low_green,
+        ],
+        borderColor: 'rgba(201,60,32,0.85)',
+        backgroundColor: 'rgba(201,60,32,0.12)',
+        borderWidth: 1.5,
+        pointRadius: 3,
+        pointBackgroundColor: 'rgba(201,60,32,0.9)',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        r: {
+          min: 0, max: 1, ticks: { display: false },
+          grid: { color: 'rgba(26,15,8,0.1)' },
+          pointLabels: { font: { family: "'JetBrains Mono'", size: 9 }, color: '#6b4f3a' },
+        }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+/* ============================================================
+   RANKING LIST
+   ============================================================ */
+function buildRanking() {
+  const list = document.getElementById('ranking-list');
+  list.innerHTML = RANKED.map(d => {
+    const t = d.HeatRisk;
+    const color = scaleColor(t, 'HeatRisk');
+    return `<li class="ranking-item" data-name="${d.Name}" role="listitem"
+              tabindex="0" aria-label="${d.Name}, rank ${d.HeatRisk_rank}">
+      <span class="ri-rank">#${d.HeatRisk_rank}</span>
+      <div class="ri-bar" aria-hidden="true">
+        <div class="ri-bar-fill" style="width:${Math.round(t*100)}%;background:${color};"></div>
+      </div>
+      <span class="ri-name">${d.Name}</span>
+      <span class="ri-score">${t.toFixed(3)}</span>
+    </li>`;
+  }).join('');
+
+  // Click on ranking item
+  list.querySelectorAll('.ranking-item').forEach(li => {
+    const activate = () => {
+      const data = WARD_DATA.find(d => d.Name === li.dataset.name);
+      if (!data) return;
+      showPanel(data);
+      // Zoom map to ward
+      if (geojsonLayer) {
+        geojsonLayer.eachLayer(layer => {
+          const n = layer.feature?.properties?.Name || layer.feature?.properties?.name || '';
+          if (n === data.Name) {
+            map.fitBounds(layer.getBounds(), { padding:[24,24], maxZoom:14, animate:true });
+          }
+        });
+      }
+    };
+    li.addEventListener('click', activate);
+    li.addEventListener('keypress', e => { if (e.key === 'Enter') activate(); });
+  });
+}
+
+/* Tooltip style injection */
+const style = document.createElement('style');
+style.textContent = `.ward-tooltip {
+  background: rgba(245,237,224,0.97) !important;
+  border: 1px solid rgba(26,15,8,0.2) !important;
+  border-radius: 4px !important;
+  padding: 6px 10px !important;
+  box-shadow: 0 4px 12px rgba(26,15,8,0.12) !important;
+  font-size: 13px !important;
+}
+.ward-tooltip::before { display: none !important; }`;
+document.head.appendChild(style);
+</script>
+
+</body>
+</html>

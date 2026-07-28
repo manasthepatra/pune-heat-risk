@@ -1,0 +1,289 @@
+/* ============================================================
+   PUNE URBAN HEAT FRAMEWORK — Ward Heat Risk Page Styles
+   ============================================================ */
+
+/* ======== BODY ======== */
+body.ward-page {
+  background: var(--paper);
+  overflow: hidden; /* prevent body scroll; panels scroll internally */
+}
+
+/* ======== TOP BAR ======== */
+.ward-topbar {
+  position: fixed; top: 60px; left: 0; right: 0; z-index: 100;
+  height: 52px;
+  background: rgba(245,237,224,0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line-strong);
+  display: flex; align-items: center;
+  padding: 0 var(--space-xl);
+  gap: var(--space-lg);
+}
+.ward-topbar-title {
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink);
+  font-weight: 700; flex-shrink: 0;
+}
+.ward-topbar-sep { width: 1px; height: 20px; background: var(--line-strong); flex-shrink: 0; }
+.ward-topbar-hint {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.1em; color: var(--muted);
+}
+.ward-topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--space-md); }
+.ward-filter-select {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink);
+  background: var(--paper-dark); border: 1px solid var(--line-strong);
+  padding: 5px 10px; border-radius: var(--radius-sm); cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+}
+.ward-filter-select:focus { outline: 2px solid var(--heat-3); outline-offset: 2px; }
+
+/* ======== LAYOUT ======== */
+.ward-layout {
+  position: fixed;
+  top: 112px; /* nav 60px + topbar 52px */
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+}
+
+/* MAP PANEL */
+.ward-map-panel {
+  flex: 1; position: relative; overflow: hidden;
+}
+#ward-map {
+  width: 100%; height: 100%;
+  background: #ede8de;
+}
+
+/* MAP CONTROLS */
+.map-controls {
+  position: absolute; right: var(--space-lg); top: var(--space-lg);
+  display: flex; flex-direction: column; gap: 2px; z-index: 200;
+}
+.map-btn {
+  width: 36px; height: 36px;
+  background: rgba(245,237,224,0.97);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 14px;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.map-btn:hover { background: var(--paper-dark); color: var(--ink); }
+.map-btn:active { background: var(--heat-3); color: #fff; }
+
+/* LEGEND — now a Leaflet control inside .leaflet-control-container (z-index 1000).
+   Positioning is handled by Leaflet; only visual styles are defined here. */
+.map-legend {
+  background: rgba(245,237,224,0.97);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  padding: 16px 18px; min-width: 180px;
+  box-shadow: var(--shadow-md);
+  /* Override Leaflet's default 10px control margin to match the rest of
+     the panel chrome (map-controls uses --space-lg for its corner offset) */
+  margin-bottom: var(--space-lg) !important;
+  margin-left:   var(--space-lg) !important;
+}
+.legend-title {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 12px; font-weight: 700;
+}
+.legend-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 7px; font-family: var(--font-mono);
+  font-size: 10px; color: var(--ink); letter-spacing: 0.05em;
+}
+.legend-swatch {
+  width: 16px; height: 12px; border-radius: 2px; flex-shrink: 0;
+}
+
+/* INFO PANEL */
+.ward-info-panel {
+  width: 380px; flex-shrink: 0;
+  background: var(--paper);
+  border-left: 1px solid var(--line-strong);
+  overflow-y: auto; position: relative;
+}
+/* Custom scrollbar */
+.ward-info-panel::-webkit-scrollbar { width: 4px; }
+.ward-info-panel::-webkit-scrollbar-track { background: transparent; }
+.ward-info-panel::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 2px; }
+
+/* DEFAULT EMPTY STATE */
+.panel-empty {
+  height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: var(--space-xl); text-align: center;
+  gap: var(--space-lg);
+}
+.panel-empty-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  border: 1.5px dashed var(--line-strong);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 22px;
+}
+.panel-empty h3 {
+  font-family: var(--font-serif); font-weight: 300;
+  font-size: 22px; letter-spacing: -0.02em; color: var(--ink);
+  font-variation-settings: "opsz" 144;
+}
+.panel-empty p {
+  font-size: 14px; line-height: 1.6; color: var(--muted);
+}
+
+/* PANEL CONTENT (filled state) */
+.panel-header {
+  padding: var(--space-xl) var(--space-xl) var(--space-lg);
+  border-bottom: 1px solid var(--line);
+  background: var(--paper-dark);
+}
+.panel-ward-name {
+  font-family: var(--font-serif); font-weight: 300;
+  font-size: 28px; line-height: 1.05; letter-spacing: -0.025em; color: var(--ink);
+  font-variation-settings: "opsz" 144; margin-bottom: 6px;
+}
+.panel-ward-meta {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.panel-risk-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 14px; padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700;
+}
+.risk-extreme { background: rgba(125,31,16,0.12); color: var(--heat-4); border: 1px solid rgba(125,31,16,0.25); }
+.risk-high    { background: rgba(201,60,32,0.10); color: var(--heat-3); border: 1px solid rgba(201,60,32,0.25); }
+.risk-moderate{ background: rgba(232,112,58,0.10); color: var(--heat-2); border: 1px solid rgba(232,112,58,0.25); }
+.risk-low     { background: rgba(42,93,110,0.10);  color: var(--cool);   border: 1px solid rgba(42,93,110,0.25); }
+
+/* METRICS GRID */
+.panel-metrics {
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--line);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+  background: var(--line-strong);
+}
+.metric-cell {
+  background: var(--paper); padding: 18px 16px;
+}
+.metric-label {
+  font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px; line-height: 1.4;
+}
+.metric-value {
+  font-family: var(--font-serif); font-weight: 300;
+  font-size: 28px; line-height: 1; letter-spacing: -0.03em; color: var(--ink);
+  font-variation-settings: "opsz" 144;
+}
+.metric-value.heat { color: var(--heat-3); }
+.metric-value.cool { color: var(--cool); }
+.metric-unit {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--muted); margin-top: 3px;
+}
+
+/* HEI BAR (H E V decomposition) */
+.panel-hei {
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--line);
+}
+.hei-title {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 14px;
+}
+.hei-bar-row {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.hei-bar-item { display: flex; flex-direction: column; gap: 4px; }
+.hei-bar-label {
+  display: flex; justify-content: space-between;
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.08em; color: var(--muted);
+}
+.hei-bar-label span:last-child { color: var(--ink); font-weight: 700; }
+.hei-bar-track {
+  height: 5px; background: var(--line-strong);
+  border-radius: 3px; overflow: hidden;
+}
+.hei-bar-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 0.8s var(--ease-out);
+}
+.hei-bar-fill.h { background: var(--heat-3); }
+.hei-bar-fill.e { background: var(--heat-2); }
+.hei-bar-fill.v { background: var(--heat-1); }
+
+/* CONTEXT NOTE */
+.panel-note {
+  padding: var(--space-md) var(--space-xl);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px; line-height: 1.65; color: var(--muted);
+  font-style: italic; background: var(--paper-mid);
+}
+
+/* RANKING LIST */
+.panel-ranking {
+  padding: var(--space-md) var(--space-xl);
+}
+.ranking-title {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 12px;
+}
+.ranking-list {
+  list-style: none; display: flex; flex-direction: column; gap: 1px;
+  background: var(--line-strong);
+}
+.ranking-item {
+  background: var(--paper); display: flex; align-items: center;
+  padding: 10px 12px; gap: 12px; cursor: pointer;
+  transition: background var(--dur-fast);
+}
+.ranking-item:hover { background: var(--paper-dark); }
+.ranking-item.active { background: rgba(201,60,32,0.07); }
+.ri-rank {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--muted); width: 22px; flex-shrink: 0; text-align: right;
+}
+.ri-bar {
+  flex: 1; height: 4px; background: var(--line-strong);
+  border-radius: 2px; overflow: hidden;
+}
+.ri-bar-fill { height: 100%; border-radius: 2px; }
+.ri-name {
+  font-size: 12px; color: var(--ink); width: 130px;
+  font-family: var(--font-ui); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ri-score {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--heat-3); font-weight: 700; flex-shrink: 0;
+}
+
+/* MOBILE TOGGLE BUTTON */
+.panel-toggle-btn {
+  display: none; position: fixed;
+  bottom: var(--space-lg); right: var(--space-lg); z-index: 300;
+  background: var(--heat-3); color: #fff;
+  border: none; border-radius: var(--radius-lg);
+  padding: 12px 20px; font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 900px) {
+  body.ward-page { overflow: auto; }
+  .ward-layout { position: relative; top: 0; flex-direction: column; height: auto; }
+  .ward-map-panel { height: 60vh; }
+  .ward-info-panel { width: 100%; max-height: 70vh; }
+  .panel-toggle-btn { display: block; }
+}
