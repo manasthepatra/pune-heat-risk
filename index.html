@@ -14,6 +14,7 @@
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/basemap.js"></script>
 
 <!-- Design System -->
 <link rel="stylesheet" href="css/design-system.css">
@@ -260,11 +261,8 @@ document.addEventListener('DOMContentLoaded', () => {
     attributionControl: true,
   });
 
-  // Light Carto Positron basemap — looks like paper
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-    maxZoom: 18,
-  }).addTo(map);
+  // Light gray basemap — looks like paper (see js/basemap.js)
+  PuneBasemap.light().addTo(map);
 
   // Load Pune boundary
   fetch('data/pune_boundary_m1.geojson')

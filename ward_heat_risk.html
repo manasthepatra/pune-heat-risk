@@ -14,6 +14,7 @@
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/basemap.js"></script>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -253,9 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
     center: [18.52, 73.86], zoom: 11,
     zoomControl: false,
   });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; CARTO &copy; OSM', maxZoom: 18,
-  }).addTo(map);
+  PuneBasemap.light().addTo(map);   // see js/basemap.js
 
   /* CUSTOM ZOOM BUTTONS */
   document.getElementById('btn-zoom-in').addEventListener('click',  () => map.zoomIn());

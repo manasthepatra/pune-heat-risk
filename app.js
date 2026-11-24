@@ -23,10 +23,8 @@ function initMap() {
   map = L.map('map', { zoomControl: false }).setView([18.5204, 73.8567], 11);
   L.control.zoom({ position: 'topleft' }).addTo(map);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; CartoDB & OSM',
-    maxZoom: 18
-  }).addTo(map);
+  // Needs <script src="js/basemap.js"> loaded before this file
+  PuneBasemap.dark().addTo(map);
 
   // Load both boundaries
   Promise.all([
